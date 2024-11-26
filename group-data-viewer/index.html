@@ -13,14 +13,20 @@
 
 <a-scene>
     <a-assets timeout="10000">
-        <img id="pattern" src="../assets/4269882900_b6dfc45dab_k.jpg">
+        <img id="floorTexture" src="../assets/floor_tiles_08_diff_2k.jpg">
+        <img id="floorNormalMap" src="../assets/floor_tiles_08_nor_gl_2k.jpg">
+        <img id="floorAmbientOcclusionMap" src="../assets/floor_tiles_08_ao_2k.jpg">
+        <img id="checkerboardEquirect" src="../assets/4269882900_b6dfc45dab_k.jpg">
     </a-assets>
 
-    <a-entity id="presentation" geometry="primitive: planar-data; spacing: 10" material="color: gray; side: double;"></a-entity>
+    <a-entity id="presentation" geometry="primitive: planar-data; spacing: 10"
+              material="color: gray; side: double;"></a-entity>
 
-    <a-group-viewer log="true"></a-group-viewer>
+    <a-group-viewer presentationId="presentation" fly="false" log="false"></a-group-viewer>
 
-    <a-sky src="#pattern"></a-sky>
+    <a-entity id="floor" geometry="primitive: plane; height: 100; width: 100;" rotation="-90 0 0"
+              material="src: #floorTexture; repeat: 100 100; normalMap: #floorNormalMap; normalTextureRepeat: 100 100; ambientOcclusionMap: #floorAmbientOcclusionMap; ambientOcclusionTextureRepeat: 100 100; "></a-entity>
+    <a-sky src="#checkerboardEquirect"></a-sky>
 </a-scene>
 </body>
 </html>

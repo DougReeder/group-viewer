@@ -11,6 +11,7 @@ AFRAME.registerComponent('group-viewer', {
 	dependencies: [],
 
 	schema: {
+		fly: {default: false},
 		presentationId: {default: 'presentation'},
 		frameSize: {default: {x: 2, y: 2, z: 2}},
 		frameCenter: {default: {x: 0, y: 1, z: 0}},
@@ -48,7 +49,7 @@ AFRAME.registerComponent('group-viewer', {
 
 		const rig = document.createElement('a-entity');
 		rig.setAttribute('id', 'rig');
-		rig.setAttribute('movement-controls', {fly: true, speed: 0.1})
+		rig.setAttribute('movement-controls', {fly: data.fly, speed: 0.1})
 		rig.setAttribute('position', {x: 0, y: 0, z: data.frameSize.z / 2 + data.frameCenter.z + 2});
 		rig.appendChild(camera);
 		rig.appendChild(leftController);
@@ -64,13 +65,6 @@ AFRAME.registerComponent('group-viewer', {
 			frame.setAttribute('position', data.frameCenter);
 			frame.setAttribute('color', 'black');
 			el.sceneEl.appendChild(frame);
-
-			const ring = document.createElement('a-ring');
-			ring.setAttribute('radius-inner', 10);
-			ring.setAttribute('radius-outer', 11);
-			ring.setAttribute('rotation', {x: -90, y: 0, z: 0});
-			ring.setAttribute('color', 'red');
-			el.sceneEl.appendChild(ring);
 		}
 	},
 
@@ -202,6 +196,7 @@ AFRAME.registerPrimitive('a-group-viewer', {
 	},
 
 	mappings: {
+		fly: 'group-viewer.fly',
 		presentationId: 'group-viewer.presentationId',
 		frameSize: 'group-viewer.frameSize',
 		frameCenter: 'group-viewer.frameCenter',
