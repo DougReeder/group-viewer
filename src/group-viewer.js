@@ -54,6 +54,24 @@ AFRAME.registerComponent('group-viewer', {
 		rig.appendChild(leftController);
 		rig.appendChild(rightController);
 		el.sceneEl.appendChild(rig);
+
+		if (data.log) {
+			const frame = document.createElement('a-box');
+			frame.setAttribute('wireframe', true);
+			frame.setAttribute('width', data.frameSize.x);
+			frame.setAttribute('height', data.frameSize.y);
+			frame.setAttribute('depth', data.frameSize.z);
+			frame.setAttribute('position', data.frameCenter);
+			frame.setAttribute('color', 'black');
+			el.sceneEl.appendChild(frame);
+
+			const ring = document.createElement('a-ring');
+			ring.setAttribute('radius-inner', 10);
+			ring.setAttribute('radius-outer', 11);
+			ring.setAttribute('rotation', {x: -90, y: 0, z: 0});
+			ring.setAttribute('color', 'red');
+			el.sceneEl.appendChild(ring);
+		}
 	},
 
 	handlers: {
