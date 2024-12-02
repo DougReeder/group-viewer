@@ -4,14 +4,15 @@
     <title>Group Data Viewer</title>
     <meta name="description" content="view netCDF data as a group using Croquet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script src="https://unpkg.com/@croquet/croquet"></script>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-croquet-component/public/lib/aframe-croquet-component.js"></script></head>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.0/dist/aframe-extras.controls.min.js"></script>
     <script src="../src/planar-data.js"></script>
     <script src="../src/group-viewer.js"></script>
-</head>
 <body>
 
-<a-scene>
+<a-scene debug croquet="spawnPoint: 0 0 2;">
     <a-assets timeout="10000">
         <img id="floorTexture" src="../assets/floor_tiles_08_diff_2k.jpg">
         <img id="floorNormalMap" src="../assets/floor_tiles_08_nor_gl_2k.jpg">
@@ -19,14 +20,18 @@
         <img id="checkerboardEquirect" src="../assets/4269882900_b6dfc45dab_k.jpg">
     </a-assets>
 
-    <a-entity id="presentation" geometry="primitive: planar-data; spacing: 10"
+    <a-entity id="presentation" multiuser geometry="primitive: planar-data; spacing: 10"
               material="color: gray; side: double;"></a-entity>
 
-    <a-group-viewer presentationId="presentation" fly="false" log="false"></a-group-viewer>
+    <a-group-viewer id="groupViewer" presentationId="presentation" multiuser fly="false" log="true"></a-group-viewer>
 
     <a-entity id="floor" geometry="primitive: plane; height: 100; width: 100;" rotation="-90 0 0"
               material="src: #floorTexture; repeat: 100 100; normalMap: #floorNormalMap; normalTextureRepeat: 100 100; ambientOcclusionMap: #floorAmbientOcclusionMap; ambientOcclusionTextureRepeat: 100 100; "></a-entity>
     <a-sky src="#checkerboardEquirect"></a-sky>
 </a-scene>
+
+<template id="avatarTemplate">
+     <a-octahedron color="#FF926B" radius="0.25"></a-octahedron>
+</template>
 </body>
 </html>

@@ -1,6 +1,6 @@
 assets/aframe-master*
 assets/aframe-dust-component.js
-dist/*LICENSE*
+dist/
 
 # IDEs
 .idea/workspace.xml

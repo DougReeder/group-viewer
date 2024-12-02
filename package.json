@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "surge": "mkdir -p dist; cp -pr src group-data-viewer assets dist/ && surge dist https://group-viewer.surge.sh",
     "beta": "rsync -rt * root@hominidsoftware.com:/var/www/beta/"
   },
   "keywords": [
