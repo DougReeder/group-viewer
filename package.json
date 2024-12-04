@@ -1,0 +1,18 @@
+{
+  "name": "group-viewer",
+  "version": "0.0.1",
+  "description": "view A-Frame scene with a group using Croquet",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "beta": "rsync -rt * root@hominidsoftware.com:/var/www/beta/"
+  },
+  "keywords": [
+    "ar",
+    "vr",
+    "xr",
+    "WebXR"
+  ],
+  "author": "Doug Reeder",
+  "license": "ISC"
+}
