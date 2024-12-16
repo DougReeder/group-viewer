@@ -7,13 +7,13 @@
     <script src="https://unpkg.com/@croquet/croquet"></script>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="../node_modules/aframe-croquet-component/public/lib/aframe-croquet-component.js"></script></head>
-<!--    <script src="https://cdn.jsdelivr.net/gh/DougReeder/aframe-croquet-component@1e6ba96/public/lib/aframe-croquet-component.js"></script></head>-->
+<!--    <script src="https://cdn.jsdelivr.net/gh/DougReeder/aframe-croquet-component@streamline/public/lib/aframe-croquet-component.js"></script></head>-->
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.0/dist/aframe-extras.controls.min.js"></script>
     <script src="../src/planar-data.js"></script>
     <script src="../src/group-viewer.js"></script>
 <body>
 
-<a-scene debug croquet="spawnPoint: 0 0 2;">
+<a-scene debug croquet="tps: 60; spawnPoint: 0 0 2;" inspector="url: https://cdn.jsdelivr.net/gh/c-frame/aframe-editor@1.7.0/dist/aframe-editor.min.js">
     <a-assets timeout="10000">
         <img id="floorTexture" src="../assets/floor_tiles_08_diff_2k.jpg">
         <img id="floorNormalMap" src="../assets/floor_tiles_08_nor_gl_2k.jpg">
@@ -24,7 +24,7 @@
     <a-entity id="presentation" multiuser geometry="primitive: planar-data; spacing: 10"
               material="color: gray; side: double;"></a-entity>
 
-    <a-group-viewer id="groupViewer" presentationId="presentation" fly="false" log="true"></a-group-viewer>
+    <a-group-viewer id="groupViewer" presentationId="presentation" fly="false" tps="60" log="true"></a-group-viewer>
 
     <a-entity id="floor" geometry="primitive: plane; height: 100; width: 100;" rotation="-90 0 0"
               material="src: #floorTexture; repeat: 100 100; normalMap: #floorNormalMap; normalTextureRepeat: 100 100; ambientOcclusionMap: #floorAmbientOcclusionMap; ambientOcclusionTextureRepeat: 100 100; "></a-entity>
