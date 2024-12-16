@@ -98,10 +98,10 @@ AFRAME.registerGeometry('planar-data', {
     let v = 0;
     while (match = floatPatt.exec(terrainHeights)) {
       let height = parseFloat(match[0]);
-      height = height * -2;
-      if (height < 0) {
-        height -= 100;
-      }
+      // height = height * -2;
+      // if (height < 0) {
+      //   height -= 100;
+      // }
       vertices[v * 3 + 1] = height;
       ++v;
     }
