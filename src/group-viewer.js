@@ -5,7 +5,6 @@
 /* global AFRAME, THREE */
 
 const SCALING_FACTOR = 1.1;
-const MIN_BOUNDING_BOX = new THREE.Vector3(0.000001, 0.000001, 0.000001);
 const CROQUET_DELAY = 17;
 const FALLBACK_COLOR = '#ccc';
 const CONTROLLER_NAME_LEFT = 'controllerLeft';
@@ -37,6 +36,7 @@ AFRAME.registerComponent('group-viewer', {
 		this.handlers.beginCursorRight = this.beginCursor.bind(this, CURSOR_PREFIX_RIGHT);
 		this.handlers.endCursorLeft = this.endCursor.bind(this, CURSOR_PREFIX_LEFT);
 		this.handlers.endCursorRight = this.endCursor.bind(this, CURSOR_PREFIX_RIGHT);
+		this.handlers.scalePresentation = this.scalePresentation.bind(this);
 
 		const data = this.data;
 		const el = this.el;
@@ -72,6 +72,8 @@ AFRAME.registerComponent('group-viewer', {
 		rig.appendChild(leftController);
 		rig.appendChild(rightController);
 		el.sceneEl.appendChild(rig);
+
+		el.addEventListener('scalepresentation', this.handlers.scalePresentation);
 
 		if (data.log) {
 			const frame = document.createElement('a-box');
@@ -279,41 +281,55 @@ AFRAME.registerComponent('group-viewer', {
 
 	/** Called when properties are changed, incl. right after init */
 	update: function () {
+		if (this.data.log) {
+			console.log(`group-viewer update presentation:`, document.querySelectorAll('#' + this.data.presentationId));
+		}
+	},
+
+	scalePresentation: function (_evt) {
 		const data = this.data;
-
-		console.log(`presentation:`, document.querySelectorAll('#' + data.presentationId));
-
 		const presentation = document.getElementById(data.presentationId);
 		const presentationObj = presentation.object3D;
 		if (data.log) {
-			console.log("group-viewer update", data, presentation, presentationObj);
+			console.log("group-viewer scalePresentation", data, presentation, presentationObj);
 		}
-		const boundingBox = new THREE.Box3(MIN_BOUNDING_BOX);
+		presentationObj.scale.x = presentationObj.scale.y = presentationObj.scale.z = 1;
+		presentationObj.position.x = presentationObj.position.y = presentationObj.position.z = 0;
+		const boundingBox = new THREE.Box3();
 		boundingBox.setFromObject(presentationObj);
 
 		const bbSize = new THREE.Vector3();
 		boundingBox.getSize(bbSize);
-		const scale = Math.min(data.frameSize.x / bbSize.x, data.frameSize.y / bbSize.y, data.frameSize.z / bbSize.z );
+		let scale = Math.min(data.frameSize.x / bbSize.x, data.frameSize.y / bbSize.y, data.frameSize.z / bbSize.z);
+		console.log(`group-viewer scalePresentation boundingBox:`, scale, bbSize, JSON.stringify(boundingBox));
+		if (Infinity === scale) {
+			scale = 1;
+		}
 
 		const offset = new THREE.Vector3();
 		boundingBox.getCenter(offset);
 		offset.multiplyScalar(-scale);
+		offset.add(data.frameCenter);
 
 		if (data.log) {
-			console.log(`group-viewer update scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
+			console.log(`group-viewer scalePresentation scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
 		}
 
 		presentation.setAttribute('scale', {x: scale, y: scale, z: scale});
-		offset.add(data.frameCenter);
 		if (! offset.equals(presentationObj.position)) {
 			presentation.setAttribute('position', offset);
 		}
 
-		// if (data.log) {
-		// 	boundingBox.setFromObject(presentation.object3D);
-		// 	const helper = new THREE.Box3Helper( boundingBox, 0xffff00 );
-		// 	document.querySelector('a-scene')?.object3D?.add( helper );
-		// }
+		if (this.boxHelper) {
+			this.el.sceneEl.object3D?.remove?.(this.boxHelper);
+		}
+		if (data.log) {
+			boundingBox.setFromObject(presentationObj);
+			if (!boundingBox.isEmpty()) {
+				this.boxHelper = new THREE.Box3Helper( boundingBox, 0xffff00 );
+				this.el.sceneEl.object3D?.add?.(this.boxHelper);
+			}
+		}
 	},
 
 	tick: function (time, timeDelta) {
@@ -356,6 +372,7 @@ AFRAME.registerComponent('group-viewer', {
 
 	/** Called when a component is removed (e.g., via removeAttribute). */
 	remove: function () {
+		this.el.removeEventListener('scalepresentation', this.handlers.scalePresentation);
 	}
 
 });
