@@ -2,6 +2,8 @@
 // Copyright © 2025 by Doug Reeder under the MIT License
 
 const FILE_INPT_ID = 'fileInput';
+// maximum size of base64-encoded data url w/ 13 required chars + MIME type
+const BASE64_CROQUET_MAX = 16384/4*3 - 13 - 255;
 
 AFRAME.registerComponent('selectable-model', {
 	dependencies: [],
@@ -29,7 +31,7 @@ AFRAME.registerComponent('selectable-model', {
 		const urlInput = document.createElement('input');
 		urlInput.setAttribute('id', 'urlInput');
 		urlInput.setAttribute('type', 'url');
-		urlInput.setAttribute('placeholder', "Paste a URL to a GLTF or GLB model");
+		urlInput.setAttribute('placeholder', "Paste a URL to a .GLB model");
 		urlInput.style.width = '30em';
 		controlStrip.appendChild(urlInput);
 		urlInput.addEventListener('change', this.handlers.openUrl);
@@ -49,7 +51,7 @@ AFRAME.registerComponent('selectable-model', {
 		const fileInpt = document.createElement('input');
 		fileInpt.setAttribute('id', FILE_INPT_ID);
 		fileInpt.setAttribute('type', 'file');
-		fileInpt.setAttribute('accept', 'model/gltf+json,model/gltf-binary,.gltf,.glb');
+		fileInpt.setAttribute('accept', 'model/gltf-binary,.glb');
 		document.body.appendChild(fileInpt);
 		fileInpt.addEventListener("change", this.handlers.fileInptChange);
 		this.fileInpt = fileInpt;
@@ -75,10 +77,22 @@ AFRAME.registerComponent('selectable-model', {
 	fileInptChange: async function (_evt) {
 		console.log(`fileInptChange`, this.fileInpt.files)
 		try {
-			if (this.fileInpt.files.length > 0) {
-				const dataUrl = await fileToDataUrl(this.fileInpt.files[0]);
+			if (0 === this.fileInpt.files.length) { return; }
+			const file = this.fileInpt.files[0];
+			const dataIF = this.el.sceneEl.croquetSession?.data;
+			if (typeof dataIF?.store === 'function' && file.size > BASE64_CROQUET_MAX) {
+				const buffer = await file.arrayBuffer();
+				const handle = await dataIF.store(buffer, {});
+				const croquetId = dataIF.toId(handle);
+				this.el.setAttribute('selectable-model', `croquet:` + croquetId);
+				this.modelNeedsScaling = true;
+			} else {
+				if (typeof dataIF?.store !== 'function') {
+					this.showPersistentMsg(`The Croquet API for syncing files has changed`);
+				}
+				const dataUrl = await fileToDataUrl(file);
 				if (dataUrl.length > 16384) {
-					this.showPersistentMsg(`“${this.fileInpt.files[0].name}” is too big to sync to other users; upload it somewhere and paste the URL below`);
+					this.showPersistentMsg(`“${file.name}” is too big to sync to other users; upload it somewhere and paste the URL below`);
 				}
 				this.el.setAttribute('selectable-model', dataUrl);
 				this.modelNeedsScaling = true;
@@ -104,14 +118,38 @@ AFRAME.registerComponent('selectable-model', {
 	},
 
 	/** Called when properties are changed, incl. right after init */
-	update: function () {
-		if (!this.data) { return; }
-		let value = this.data;
-		if (! value.startsWith('url(')) {
-			value = 'url(' + value + ')';
+	update: async function () {
+		try {
+			if (!this.data) { return; }
+			if (this.objectUrl) {
+				URL.revokeObjectURL(this.objectUrl);
+				this.objectUrl = null;
+			}
+
+			let modelUrl = this.data;
+
+			if (modelUrl.startsWith('croquet:')) {
+				const dataIF = this.el.sceneEl.croquetSession?.data;
+				const handle = dataIF.fromId(modelUrl.slice('croquet:'.length));
+				const byteArray = await dataIF.fetch(handle);
+				const blob = new Blob([byteArray], {type: 'model/gltf-binary'});
+				this.objectUrl = URL.createObjectURL(blob);
+				modelUrl = this.objectUrl;
+			}
+
+			// if (! value.startsWith('url(')) {
+			// 	value = 'url(' + value + ')';
+			// }
+			console.log(`selectable-model update GLTF src: “${modelUrl}”`)
+			if (!this.gltfEl) {
+				this.gltfEl = document.createElement('a-gltf-model');
+				this.gltfEl.classList.add(PRESENTATION_CLASS);
+				this.el.appendChild(this.gltfEl);
+			}
+			this.gltfEl.setAttribute('src', modelUrl);
+		} catch (err) {
+			console.log(`selectable-model update error:`, err);
 		}
-		console.log(`selectable-model update “${value?.slice(0, 60)}...”`)
-		this.el.setAttribute('gltf-model', value);
 	},
 
 	modelLoaded: function () {

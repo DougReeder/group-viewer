@@ -7,6 +7,7 @@
 const SCALING_FACTOR = 1.1;
 const CROQUET_DELAY = 17;
 const FALLBACK_COLOR = '#ccc';
+const PRESENTATION_CLASS = 'presentation';
 const CONTROLLER_NAME_LEFT = 'controllerLeft';
 const CONTROLLER_NAME_RIGHT = 'controllerRight';
 const CURSOR_PREFIX_LEFT = 'cursor-left-';
@@ -52,7 +53,7 @@ AFRAME.registerComponent('group-viewer', {
 		const leftController = document.createElement('a-entity');
 		leftController.setAttribute('id', CONTROLLER_NAME_LEFT);
 		leftController.setAttribute('laser-controls', controlsConfiguration);
-		leftController.setAttribute('raycaster', {objects: '#' + data.presentationId});
+		leftController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
 		leftController.addEventListener('raycaster-intersection', this.handlers.beginCursorLeft);
 		leftController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorLeft);
 
@@ -60,7 +61,7 @@ AFRAME.registerComponent('group-viewer', {
 		const rightController = document.createElement('a-entity');
 		rightController.setAttribute('id', CONTROLLER_NAME_RIGHT);
 		rightController.setAttribute('laser-controls', controlsConfiguration);
-		rightController.setAttribute('raycaster', {objects: '#' + data.presentationId});
+		rightController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
 		rightController.addEventListener('raycaster-intersection', this.handlers.beginCursorRight);
 		rightController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorRight);
 
@@ -225,9 +226,21 @@ AFRAME.registerComponent('group-viewer', {
 				console.log(`beginCursor ${evt.type} using existing ${userColor} ${cursorPrefix}`, cursor);
 			}
 			cursor.setAttribute('visible', true);
-			cursor.setAttribute('position', detail.intersections[0].point);
-			this.quaternion.setFromUnitVectors(cursor.object3D.up, detail.intersections[0].normal);
-			cursor.setAttribute('rotationquaternion', this.quaternion);
+			const intersection = detail.intersections[0];
+			if (intersection?.point?.isVector3) {
+				cursor.setAttribute('position', intersection.point);
+			} else {
+				console.debug(`group-viewer: beginCursor: intersection has no point:`, intersection);
+			}
+			if (intersection?.normal?.isVector3) {
+				this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.normal);
+				cursor.setAttribute('rotationquaternion', this.quaternion);
+			} else if (intersection?.face?.normal?.isVector3) {
+				this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.face.normal);
+				cursor.setAttribute('rotationquaternion', this.quaternion);
+			} else {
+				console.debug(`group-viewer: beginCursor: intersection has no normal:`, intersection);
+			}
 		} else {
 			if (CURSOR_PREFIX_LEFT === cursorPrefix) {
 				this.handlers.endCursorLeft(evt)
@@ -256,9 +269,20 @@ AFRAME.registerComponent('group-viewer', {
 					let cursor = document.getElementById(cursorPrefix + viewId);
 
 					if (cursor) {
-						cursor.setAttribute('position', intersection.point);
-						this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.normal);
-						cursor.setAttribute('rotationquaternion', this.quaternion);
+						if (intersection?.point?.isVector3) {
+							cursor.setAttribute('position', intersection.point);
+						} else {
+							console.debug(`group-viewer: updateCursors: intersection has no point:`, intersection);
+						}
+						if (intersection?.normal?.isVector3) {
+							this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.normal);
+							cursor.setAttribute('rotationquaternion', this.quaternion);
+						} else if (intersection?.face?.normal?.isVector3) {
+							this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.face.normal);
+							cursor.setAttribute('rotationquaternion', this.quaternion);
+						} else {
+							console.debug(`group-viewer: updateCursors: intersection has no normal:`, intersection);
+						}
 						console.debug(`updateCursors ${userColor} ${cursorPrefix}:`, intersection.point, intersection.normal, this.quaternion, cursor);
 					} else {
 						console.error(`updateCursors ${controllerName} intersection, but no ${userColor} ${cursorPrefix}`, intersection.point, intersection.normal, raycaster?.intersectedEls[0])
@@ -280,7 +304,15 @@ AFRAME.registerComponent('group-viewer', {
 	},
 
 	/** Called when properties are changed, incl. right after init */
-	update: function () {
+	update: function (oldData) {
+		const oldPresentation = document.getElementById(oldData.presentationId);
+		oldPresentation?.classList.remove(PRESENTATION_CLASS);
+		const newPresentation = document.getElementById(this.data.presentationId);
+		newPresentation?.classList.add(PRESENTATION_CLASS);
+		if (!newPresentation) {
+			this.showPersistentMsg(`no presentation (id ${this.data.presentationId})`);
+		}
+
 		if (this.data.log) {
 			console.log(`group-viewer update presentation:`, document.querySelectorAll('#' + this.data.presentationId));
 		}
@@ -373,8 +405,23 @@ AFRAME.registerComponent('group-viewer', {
 	/** Called when a component is removed (e.g., via removeAttribute). */
 	remove: function () {
 		this.el.removeEventListener('scalepresentation', this.handlers.scalePresentation);
-	}
+	},
 
+	showPersistentMsg: function (msg) {
+		if (msg instanceof Error) {
+			msg = msg.message || msg.name || msg?.toString();
+		}
+
+		setTimeout( () => {
+			const dialog = document.querySelector('dialog');
+			if (! dialog) {
+				alert(msg);
+			}
+			const msgElmt = dialog.firstElementChild ?? dialog;
+			msgElmt.innerText = msg;
+			dialog.show();
+		}, 100);
+	},
 });
 
 
