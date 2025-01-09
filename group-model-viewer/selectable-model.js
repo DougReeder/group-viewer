@@ -97,11 +97,12 @@ AFRAME.registerComponent('selectable-model', {
 			{startEvents: 'endspin', property: 'scale', to: '0.05 0.05 0.05', dur: 125});
 		spinner.setAttribute('animation__endspinhide',
 			{startEvents: 'animationcomplete__endspin', property: 'visible', to: false, dur: 0});
-		spinner.setAttribute('visible', 'false');
 		this.el.sceneEl.appendChild(spinner);
 
 		spinner.addEventListener('stateadded', this.handlers.spinnerStateAdded);
 		spinner.addEventListener('stateremoved', this.handlers.spinnerStateRemoved);
+
+		spinner?.addState(STATE_SPINNING);   // marks where model will be placed
 	},
 
 	handlers: {},
