@@ -1,6 +1,6 @@
 // group-viewer.js — A component and primitive to re-scale a presentation, provide cursors & markers
 // and share with a group using Croquet
-// Copyright © 2024 by Doug Reeder under the MIT License
+// Copyright © 2024–2025 by Doug Reeder under the MIT License
 
 /* global AFRAME, THREE */
 
@@ -19,8 +19,9 @@ AFRAME.registerComponent('group-viewer', {
 	schema: {
 		fly: {default: false},
 		presentationId: {default: 'presentation'},
-		frameSize: {default: {x: 2, y: 2, z: 2}},
-		frameCenter: {default: {x: 0, y: 1, z: 0}},
+		pointerModelId: {default: 'pointerModel'},
+		frameSize: {type: 'vec3', default: {x: 2, y: 2, z: 2}},
+		frameCenter: {type: 'vec3', default: {x: 0, y: 1, z: 0}},
 		tps: {type: 'number', default: 20},   // Croquet OS ticks per second
 
 		log: {default: false},
@@ -213,11 +214,17 @@ AFRAME.registerComponent('group-viewer', {
 			const userColor = document.querySelector('a-scene')?.dataset?.userColor || FALLBACK_COLOR;
 			let cursor = document.getElementById(cursorPrefix + viewId);
 			if (!cursor) {
-				cursor = document.createElement('a-cone');
-				cursor.setAttribute('radius-top', 0.01);
-				cursor.setAttribute('radius-bottom', -0.01);
-				cursor.setAttribute('height', 0.60);
-				cursor.setAttribute('color', userColor);
+				if (document.getElementById(this.data.pointerModelId)) {
+					cursor = document.createElement('a-gltf-model');
+					cursor.setAttribute('src', '#' + this.data.pointerModelId);
+					cursor.setAttribute('object-tint', userColor);
+				} else {   // falls back to cones on both sides of each face
+					cursor = document.createElement('a-cone');
+					cursor.setAttribute('radius-top', 0.01);
+					cursor.setAttribute('radius-bottom', -0.01);
+					cursor.setAttribute('height', 0.60);
+					cursor.setAttribute('color', userColor);
+				}
 				cursor.setAttribute('id', cursorPrefix + viewId);
 				cursor.setAttribute('multiuser', 'anim:false');
 				this.el.sceneEl.appendChild(cursor);

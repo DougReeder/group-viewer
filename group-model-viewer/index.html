@@ -16,6 +16,8 @@
 
 <a-scene debug croquet="tps: 60; spawnPoint: 0 0 2;" inspector="url: https://cdn.jsdelivr.net/gh/c-frame/aframe-editor@1.7.0/dist/aframe-editor.min.js">
     <a-assets timeout="10000">
+        <a-asset-item id="avatarModel" src="../assets/low_poly_head_with_hair_free_download.glb"></a-asset-item>
+        <a-asset-item id="pointerModel" src="../assets/pointer_cone.glb"></a-asset-item>
         <img id="floorTexture" src="../assets/floor_tiles_08_diff_2k.jpg">
         <img id="floorNormalMap" src="../assets/floor_tiles_08_nor_gl_2k.jpg">
         <img id="floorAmbientOcclusionMap" src="../assets/floor_tiles_08_ao_2k.jpg">
@@ -24,7 +26,7 @@
 
     <a-entity id="presentation" selectable-model multiuser></a-entity>
 
-    <a-group-viewer id="groupViewer" presentationId="presentation" fly="false" tps="60" log="true"></a-group-viewer>
+    <a-group-viewer id="groupViewer" presentationId="presentation" pointerModelId="pointerModel" fly="false" tps="60" log="false"></a-group-viewer>
 
     <a-entity id="floor" geometry="primitive: plane; height: 100; width: 100;" rotation="-90 0 0"
               material="src: #floorTexture; repeat: 100 100; normalMap: #floorNormalMap; normalTextureRepeat: 100 100; ambientOcclusionMap: #floorAmbientOcclusionMap; ambientOcclusionTextureRepeat: 100 100; "></a-entity>
@@ -39,7 +41,9 @@
 </dialog>
 
 <template id="avatarTemplate">
-     <a-octahedron color="#FF926B" radius="0.25"></a-octahedron>
+    <a-entity>   <!-- This entity's location and rotation are set from the other user's camera -->
+        <a-entity gltf-model="#avatarModel" scale="0.005 0.005 0.005" rotation="0 0 0" position="0 0 0"></a-entity>
+    </a-entity>
 </template>
 </body>
 </html>
