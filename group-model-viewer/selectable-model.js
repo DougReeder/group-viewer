@@ -222,8 +222,9 @@ AFRAME.registerComponent('selectable-model', {
 
 	modelError: function (evt) {
 		console.error(`selectable-model modelError:`, evt.detail);
-		const msg = evt.detail.format ?
-			`not a valid ${evt.detail.format} file` :
+		const format = 'gltf' === evt.detail?.format ? '.GLB' : evt.detail?.format;
+		const msg = format ?
+			`not a valid ${format?.toUpperCase?.()} file` :
 			`error while loading model: ` + JSON.stringify(evt.detail);
 		this.showPersistentMsg(msg);
 	},
@@ -260,19 +261,55 @@ AFRAME.registerComponent('selectable-model', {
 		this.el.removeEventListener('model-error', this.handlers.modelError);
 	},
 
+	showTransientMsg: function (msg) {
+		if (msg instanceof Error) {
+			msg = msg.message || msg.name || msg?.toString();
+		}
+
+		setTimeout( () => {
+			if (!this.transientDialog) {
+				this.transientDialog = document.createElement('dialog');
+				this.transientDialog.style.top = '1em';
+				this.transientDialog.style.left = '1em';
+				this.transientDialog.style.marginLeft = '0';
+				document.body.appendChild(this.transientDialog);
+				const div = document.createElement('div');
+				this.transientDialog.appendChild(div);
+			}
+			const msgElmt = this.transientDialog.firstElementChild ?? this.transientDialog;
+			msgElmt.innerText = msg;
+			this.transientDialog.show();
+
+			setTimeout(this.transientDialog.close.bind(this.transientDialog),7000);
+		}, 100);
+	},
+
 	showPersistentMsg: function (msg) {
 		if (msg instanceof Error) {
 			msg = msg.message || msg.name || msg?.toString();
 		}
 
 		setTimeout( () => {
-			const dialog = document.querySelector('dialog');
-			if (! dialog) {
-				alert(msg);
+			if (!this.persistentDialog) {
+				this.persistentDialog = document.createElement('dialog');
+				this.persistentDialog.style.top = '1em';
+				this.persistentDialog.style.right = '1em';
+				this.persistentDialog.style.marginRight = '0';
+				document.body.appendChild(this.persistentDialog);
+				const div = document.createElement('div');
+				this.persistentDialog.appendChild(div);
+				const form = document.createElement('form');
+				form.setAttribute('method', 'dialog');
+				this.persistentDialog.appendChild(form);
+				const button = document.createElement('button');
+				button.innerText = 'OK';
+				button.autofocus = true;
+				button.style.marginBlockStart = '1em';
+				form.appendChild(button);
 			}
-			const msgElmt = dialog.firstElementChild ?? dialog;
+			const msgElmt = this.persistentDialog.firstElementChild ?? this.persistentDialog;
 			msgElmt.innerText = msg;
-			dialog.show();
+			this.persistentDialog.show();
 		}, 100);
 	},
 });

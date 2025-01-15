@@ -92,8 +92,8 @@ AFRAME.registerComponent('group-viewer', {
 			});
 			camera.setAttribute('position', {x: 0, y: 0, z: 0});
 			el.sceneEl.appendChild(camera);
-			el.sceneEl.addEventListener('user-added', this.handlers.userAdded);
 		}
+		el.sceneEl.addEventListener('user-added', this.handlers.userAdded);
 
 		el.addEventListener('scalepresentation', this.handlers.scalePresentation);
 
@@ -113,7 +113,7 @@ AFRAME.registerComponent('group-viewer', {
 	},
 
 	userAdded: function (evt) {
-		console.log(`userAdded`, evt.detail);
+		console.log(`group-viewer userAdded`, evt.detail);
 		if (evt.detail.viewId !== this.el.sceneEl.dataset.viewId) { return; }
 
 		const cameraEnt = document.querySelector('[camera]');
@@ -156,8 +156,32 @@ Drag to orbit.
 Mousewheel to zoom.
 Drag with right mouse button to pan.`;
 			}
-			camera.setAttribute('orbit-controls', newOrbitControls);
+
+			if (AFRAME.utils.device.isMobile()) {
+				controlHelp = `
+
+Drag to orbit.
+Two-finger drag up-down to zoom.
+Two-finger drag sideways to pan.`;
+			} else {
+				controlHelp = `
+
+Drag to orbit.
+Mousewheel to zoom.
+Drag with right mouse button to pan.`;
+			}
+		} else {
+			controlHelp = `
+
+left joystick: move
+right joystick: rotate
+A button: enlarge horizontally
+B button: reduce horizontally
+X button: enlarge vertically
+Y button: reduce vertically`;
 		}
+
+		this.showTransientMsg(`Your color is ${evt.detail.color}.` + controlHelp);
 	},
 
 	horizontalLarger: function (_evt) {
@@ -261,10 +285,10 @@ Drag with right mouse button to pan.`;
 			case "]":
 				this.horizontalSmaller(evt);
 				break;
-			case "{":
+			case "-":
 				this.verticalLarger(evt);
 				break;
-			case "}":
+			case "=":
 				this.verticalSmaller(evt);
 				break;
 			// default:
@@ -385,7 +409,7 @@ Drag with right mouse button to pan.`;
 		const newPresentation = document.getElementById(this.data.presentationId);
 		newPresentation?.classList.add(PRESENTATION_CLASS);
 		if (!newPresentation) {
-			this.showPersistentMsg(`no presentation (id ${this.data.presentationId})`);
+			this.showPersistentMsg(`no element with presentation id “${this.data.presentationId}”`);
 		}
 
 		if (this.data.log) {
@@ -482,19 +506,55 @@ Drag with right mouse button to pan.`;
 		this.el.removeEventListener('scalepresentation', this.handlers.scalePresentation);
 	},
 
+	showTransientMsg: function (msg) {
+		if (msg instanceof Error) {
+			msg = msg.message || msg.name || msg?.toString();
+		}
+
+		setTimeout( () => {
+			if (!this.transientDialog) {
+				this.transientDialog = document.createElement('dialog');
+				this.transientDialog.style.top = '1em';
+				this.transientDialog.style.left = '1em';
+				this.transientDialog.style.marginLeft = '0';
+				document.body.appendChild(this.transientDialog);
+				const div = document.createElement('div');
+				this.transientDialog.appendChild(div);
+			}
+			const msgElmt = this.transientDialog.firstElementChild ?? this.transientDialog;
+			msgElmt.innerText = msg;
+			this.transientDialog.show();
+
+			setTimeout(this.transientDialog.close.bind(this.transientDialog),7000);
+		}, 100);
+	},
+
 	showPersistentMsg: function (msg) {
 		if (msg instanceof Error) {
 			msg = msg.message || msg.name || msg?.toString();
 		}
 
 		setTimeout( () => {
-			const dialog = document.querySelector('dialog');
-			if (! dialog) {
-				alert(msg);
+			if (!this.persistentDialog) {
+				this.persistentDialog = document.createElement('dialog');
+				this.persistentDialog.style.top = '1em';
+				this.persistentDialog.style.right = '1em';
+				this.persistentDialog.style.marginRight = '0';
+				document.body.appendChild(this.persistentDialog);
+				const div = document.createElement('div');
+				this.persistentDialog.appendChild(div);
+				const form = document.createElement('form');
+				form.setAttribute('method', 'dialog');
+				this.persistentDialog.appendChild(form);
+				const button = document.createElement('button');
+				button.innerText = 'OK';
+				button.autofocus = true;
+				button.style.marginBlockStart = '1em';
+				form.appendChild(button);
 			}
-			const msgElmt = dialog.firstElementChild ?? dialog;
+			const msgElmt = this.persistentDialog.firstElementChild ?? this.persistentDialog;
 			msgElmt.innerText = msg;
-			dialog.show();
+			this.persistentDialog.show();
 		}, 100);
 	},
 });
