@@ -29,6 +29,7 @@ AFRAME.registerComponent('group-viewer', {
 
 	/** Called once when component is attached. Generally for initial setup. */
 	init: function () {
+		this.handlers.userAdded = this.userAdded.bind(this);
 		this.handlers.horizontalLarger = this.horizontalLarger.bind(this);
 		this.handlers.horizontalSmaller = this.horizontalSmaller.bind(this);
 		this.handlers.verticalLarger = this.verticalLarger.bind(this);
@@ -44,36 +45,55 @@ AFRAME.registerComponent('group-viewer', {
 		const el = this.el;
 
 		let camera = document.querySelector('[camera]');
-		camera.parentElement.removeChild(camera);
+		camera?.parentElement.removeChild(camera);   // replaces any existing camera
 
-		camera = document.createElement('a-camera');
-		camera.setAttribute('wasd-controls-enabled', false);
-		camera.setAttribute('position', {x: 0, y: 1.6, z: 0});
+		if (AFRAME.utils.device.checkHeadsetConnected() && ! AFRAME.utils.device.isMobile()) {
+			camera = document.createElement('a-camera');
+			camera.setAttribute('wasd-controls-enabled', false);
+			camera.setAttribute('position', {x: 0, y: 1.6, z: 0});
 
-		const controlsConfiguration = {hand: 'left'};
-		const leftController = document.createElement('a-entity');
-		leftController.setAttribute('id', CONTROLLER_NAME_LEFT);
-		leftController.setAttribute('laser-controls', controlsConfiguration);
-		leftController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
-		leftController.addEventListener('raycaster-intersection', this.handlers.beginCursorLeft);
-		leftController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorLeft);
+			const controlsConfiguration = {hand: 'left'};
+			const leftController = document.createElement('a-entity');
+			leftController.setAttribute('id', CONTROLLER_NAME_LEFT);
+			leftController.setAttribute('laser-controls', controlsConfiguration);
+			leftController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
+			leftController.addEventListener('raycaster-intersection', this.handlers.beginCursorLeft);
+			leftController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorLeft);
 
-		controlsConfiguration.hand = 'right';
-		const rightController = document.createElement('a-entity');
-		rightController.setAttribute('id', CONTROLLER_NAME_RIGHT);
-		rightController.setAttribute('laser-controls', controlsConfiguration);
-		rightController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
-		rightController.addEventListener('raycaster-intersection', this.handlers.beginCursorRight);
-		rightController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorRight);
+			controlsConfiguration.hand = 'right';
+			const rightController = document.createElement('a-entity');
+			rightController.setAttribute('id', CONTROLLER_NAME_RIGHT);
+			rightController.setAttribute('laser-controls', controlsConfiguration);
+			rightController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
+			rightController.addEventListener('raycaster-intersection', this.handlers.beginCursorRight);
+			rightController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorRight);
 
-		const rig = document.createElement('a-entity');
-		rig.setAttribute('id', 'rig');
-		rig.setAttribute('movement-controls', {fly: data.fly, speed: 0.1})
-		rig.setAttribute('position', {x: 0, y: 0, z: data.frameSize.z / 2 + data.frameCenter.z + 2});
-		rig.appendChild(camera);
-		rig.appendChild(leftController);
-		rig.appendChild(rightController);
-		el.sceneEl.appendChild(rig);
+			const rig = document.createElement('a-entity');
+			rig.setAttribute('id', 'rig');
+			rig.setAttribute('movement-controls', {fly: data.fly, speed: 0.1})
+			rig.setAttribute('position', {x: 0, y: 0, z: data.frameSize.z / 2 + data.frameCenter.z + 2});
+			rig.appendChild(camera);
+			rig.appendChild(leftController);
+			rig.appendChild(rightController);
+			el.sceneEl.appendChild(rig);
+		} else {
+			camera = document.createElement('a-camera');
+			camera.setAttribute('look-controls-enabled', false);
+			camera.setAttribute('wasd-controls-enabled', false);
+			const theta = Math.random() * 2 * Math.PI;   // temporary position not same as other users
+			camera.setAttribute('orbit-controls', {
+				minDistance: 0.75,
+				maxDistance: 50,
+				target: data.frameCenter,
+				cursor: data.frameCenter,
+				initialPosition: {x: 2 * Math.sin(theta), y: 1.6, z: 2 * Math.cos(theta)},
+				rotateSpeed: 0.2,
+				zoomSpeed: 0.2,
+			});
+			camera.setAttribute('position', {x: 0, y: 0, z: 0});
+			el.sceneEl.appendChild(camera);
+			el.sceneEl.addEventListener('user-added', this.handlers.userAdded);
+		}
 
 		el.addEventListener('scalepresentation', this.handlers.scalePresentation);
 
@@ -90,6 +110,54 @@ AFRAME.registerComponent('group-viewer', {
 	},
 
 	handlers: {
+	},
+
+	userAdded: function (evt) {
+		console.log(`userAdded`, evt.detail);
+		if (evt.detail.viewId !== this.el.sceneEl.dataset.viewId) { return; }
+
+		const cameraEnt = document.querySelector('[camera]');
+		const orbitControls = AFRAME.utils.entity.getComponentProperty(cameraEnt, 'orbit-controls');
+
+		if (orbitControls) {
+			const position = {x: evt.detail.position?.x ?? 0, y: evt.detail.position?.y ?? 1.6, z: evt.detail.position?.z ?? -2.5};
+			const cameraObj = cameraEnt.getObject3D('camera');
+			cameraObj?.position?.copy(position);
+		} else {
+			const rigEnt = cameraEnt.parentElement;
+			const position = {x: evt.detail.position?.x ?? 0, y: 0, z: evt.detail.position?.z ?? -2.5};
+			rigEnt.setAttribute('position', position);
+
+			const qInit = evt.detail.rotationquaternion;
+			const rInit = evt.detail.rotation;
+			if (Number.isFinite(qInit?.x) && Number.isFinite(qInit?.y) &&
+				Number.isFinite(qInit?.z) && Number.isFinite(qInit?.w)) {
+				rigEnt.setAttribute('rotationquaternion', qInit);
+			} else if (Number.isFinite(rInit?.x) && Number.isFinite(rInit?.y) && Number.isFinite(rInit?.z)) {
+				const rotation = {x: rInit.x, y: rInit.y - 180, z: rInit.z};
+				rigEnt.setAttribute('rotation', rotation);
+			} else {
+				console.error(`group-viewer userAdded can't set initial quaternion nor rotation of rig:`, qInit, rInit);
+			}
+		}
+
+		let controlHelp = "";
+		if (orbitControls) {
+			if (AFRAME.utils.device.isMobile()) {
+				controlHelp = `
+
+Drag to orbit.
+Two-finger drag up-down to zoom.
+Two-finger drag sideways to pan.`;
+			} else {
+				controlHelp = `
+
+Drag to orbit.
+Mousewheel to zoom.
+Drag with right mouse button to pan.`;
+			}
+			camera.setAttribute('orbit-controls', newOrbitControls);
+		}
 	},
 
 	horizontalLarger: function (_evt) {
@@ -382,12 +450,12 @@ AFRAME.registerComponent('group-viewer', {
 		}
 
 		const rightController = document.getElementById(CONTROLLER_NAME_RIGHT);
-		rightController.removeEventListener('abuttondown', this.handlers.horizontalLarger)
-		rightController.removeEventListener('bbuttondown', this.handlers.horizontalSmaller);
+		rightController?.removeEventListener('abuttondown', this.handlers.horizontalLarger)
+		rightController?.removeEventListener('bbuttondown', this.handlers.horizontalSmaller);
 
 		const leftController = document.getElementById(CONTROLLER_NAME_LEFT);
-		leftController.removeEventListener('xbuttondown', this.handlers.verticalLarger);
-		leftController.removeEventListener('ybuttondown', this.handlers.verticalSmaller);
+		leftController?.removeEventListener('xbuttondown', this.handlers.verticalLarger);
+		leftController?.removeEventListener('ybuttondown', this.handlers.verticalSmaller);
 
 		window.removeEventListener('keydown', this.handlers.keyDown);
 	},
@@ -399,12 +467,12 @@ AFRAME.registerComponent('group-viewer', {
 		}
 
 		const rightController = document.getElementById(CONTROLLER_NAME_RIGHT);
-		rightController.addEventListener('abuttondown', this.handlers.horizontalLarger);
-		rightController.addEventListener('bbuttondown', this.handlers.horizontalSmaller);
+		rightController?.addEventListener('abuttondown', this.handlers.horizontalLarger);
+		rightController?.addEventListener('bbuttondown', this.handlers.horizontalSmaller);
 
 		const leftController = document.getElementById(CONTROLLER_NAME_LEFT);
-		leftController.addEventListener('xbuttondown', this.handlers.verticalLarger);
-		leftController.addEventListener('ybuttondown', this.handlers.verticalSmaller);
+		leftController?.addEventListener('xbuttondown', this.handlers.verticalLarger);
+		leftController?.addEventListener('ybuttondown', this.handlers.verticalSmaller);
 
 		window.addEventListener('keydown', this.handlers.keyDown);
 	},

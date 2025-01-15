@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "presurge": "mkdir -p dist; cp -pr src node_modules group-data-viewer group-model-viewer assets dist/",
+    "presurge": "mkdir -p dist; cp -pr src src-dev node_modules group-data-viewer group-model-viewer assets dist/",
     "surge": "surge dist https://group-viewer.surge.sh",
-    "prebeta": "mkdir -p dist; cp -pr src node_modules group-data-viewer group-model-viewer assets dist/",
+    "prebeta": "mkdir -p dist; cp -pr src src-dev node_modules group-data-viewer group-model-viewer assets dist/",
     "beta": "rsync -rt dist/* root@hominidsoftware.com:/var/www/beta/"
   },
   "keywords": [
