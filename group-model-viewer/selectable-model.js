@@ -117,6 +117,7 @@ AFRAME.registerComponent('selectable-model', {
 	openModelFile: function (evt) {
 		console.log(`openModelFile`, evt.detail);
 		this.fileInpt.click();
+		this.clearPersistentMsg();
 	},
 
 	fileInptChange: async function (_evt) {
@@ -203,6 +204,7 @@ AFRAME.registerComponent('selectable-model', {
 			// 	value = 'url(' + value + ')';
 			// }
 			console.log(`selectable-model update GLTF src: “${modelUrl}”`)
+			this.clearPersistentMsg();
 			this.gltfEl.setAttribute('src', modelUrl);
 		} catch (err) {
 			console.log(`selectable-model update error:`, err);
@@ -312,4 +314,8 @@ AFRAME.registerComponent('selectable-model', {
 			this.persistentDialog.show();
 		}, 100);
 	},
+
+	clearPersistentMsg: function () {
+		this.persistentDialog?.close();
+	}
 });

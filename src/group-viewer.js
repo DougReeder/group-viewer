@@ -181,7 +181,7 @@ X button: enlarge vertically
 Y button: reduce vertically`;
 		}
 
-		this.showTransientMsg(`Your color is ${evt.detail.color}.` + controlHelp);
+		this.showTransientMsg(`Your color is ${evt.detail.color}.` + controlHelp, evt.detail.color);
 	},
 
 	horizontalLarger: function (_evt) {
@@ -506,7 +506,7 @@ Y button: reduce vertically`;
 		this.el.removeEventListener('scalepresentation', this.handlers.scalePresentation);
 	},
 
-	showTransientMsg: function (msg) {
+	showTransientMsg: function (msg, colorName) {
 		if (msg instanceof Error) {
 			msg = msg.message || msg.name || msg?.toString();
 		}
@@ -523,6 +523,15 @@ Y button: reduce vertically`;
 			}
 			const msgElmt = this.transientDialog.firstElementChild ?? this.transientDialog;
 			msgElmt.innerText = msg;
+			let contrastColor;
+			if (colorName) {
+				contrastColor = ['red', 'green', 'blue', 'purple', 'black'].includes(colorName) ? 'white' : 'black';
+			} else {
+				colorName = 'white';
+				contrastColor = 'black';
+			}
+			this.transientDialog.style.backgroundColor = colorName;
+			this.transientDialog.style.color = contrastColor;
 			this.transientDialog.show();
 
 			setTimeout(this.transientDialog.close.bind(this.transientDialog),7000);
