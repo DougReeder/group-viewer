@@ -30,6 +30,7 @@ AFRAME.registerComponent('group-viewer', {
 	/** Called once when component is attached. Generally for initial setup. */
 	init: function () {
 		this.handlers.userAdded = this.userAdded.bind(this);
+		this.handlers.userExit = this.userExit.bind(this);
 		this.handlers.horizontalLarger = this.horizontalLarger.bind(this);
 		this.handlers.horizontalSmaller = this.horizontalSmaller.bind(this);
 		this.handlers.verticalLarger = this.verticalLarger.bind(this);
@@ -59,6 +60,7 @@ AFRAME.registerComponent('group-viewer', {
 			leftController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
 			leftController.addEventListener('raycaster-intersection', this.handlers.beginCursorLeft);
 			leftController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorLeft);
+			el.sceneEl.addEventListener('exit-vr', this.handlers.endCursorLeft);
 
 			controlsConfiguration.hand = 'right';
 			const rightController = document.createElement('a-entity');
@@ -67,6 +69,7 @@ AFRAME.registerComponent('group-viewer', {
 			rightController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
 			rightController.addEventListener('raycaster-intersection', this.handlers.beginCursorRight);
 			rightController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorRight);
+			el.sceneEl.addEventListener('exit-vr', this.handlers.endCursorRight);
 
 			const rig = document.createElement('a-entity');
 			rig.setAttribute('id', 'rig');
@@ -94,6 +97,7 @@ AFRAME.registerComponent('group-viewer', {
 			el.sceneEl.appendChild(camera);
 		}
 		el.sceneEl.addEventListener('user-added', this.handlers.userAdded);
+		el.sceneEl.addEventListener('user-exit', this.handlers.userExit);
 
 		el.addEventListener('scalepresentation', this.handlers.scalePresentation);
 
@@ -182,6 +186,15 @@ Y button: reduce vertically`;
 		}
 
 		this.showTransientMsg(`Your color is ${evt.detail.color}.` + controlHelp, evt.detail.color);
+	},
+
+	userExit: function (evt) {
+		console.log(`group-viewer userExit`, evt.detail);
+		// Hides cursors of *other* user.
+		for (const cursorPrefix of [CURSOR_PREFIX_LEFT, CURSOR_PREFIX_RIGHT]) {
+			const cursor = document.getElementById(cursorPrefix + evt.detail.viewId);
+			cursor?.setAttribute('visible', false);
+		}
 	},
 
 	horizontalLarger: function (_evt) {
