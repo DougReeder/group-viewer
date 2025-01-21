@@ -22,6 +22,8 @@ AFRAME.registerComponent('selectable-model', {
 		this.handlers.openUrl = this.openUrl.bind(this);
 		this.handlers.openModelFile = this.openModelFile.bind(this);
 		this.handlers.fileInptChange = this.fileInptChange.bind(this);
+		this.handlers.preventDefault = (evt => { evt.preventDefault(); }).bind(this);
+		this.handlers.drop = this.drop.bind(this);
 		this.handlers.modelLoaded = this.modelLoaded.bind(this);
 		this.handlers.modelError = this.modelError.bind(this);
 		this.handlers.animateChange = this.animateChange.bind(this);
@@ -38,22 +40,7 @@ AFRAME.registerComponent('selectable-model', {
 		controlStrip.style.justifyContent = 'flex-start'
 		document.body.appendChild(controlStrip);
 
-		const urlInput = document.createElement('input');
-		urlInput.setAttribute('id', 'urlInput');
-		urlInput.setAttribute('type', 'url');
-		urlInput.setAttribute('placeholder', "Paste a URL to a .GLB model");
-		urlInput.style.width = '30em';
-		controlStrip.appendChild(urlInput);
-		urlInput.addEventListener('change', this.handlers.openUrl);
-
-		const openUrlBtn = document.createElement('button');
-		openUrlBtn.style.marginLeft = '0.5em';
-		openUrlBtn.innerText = "Fetch model from URL";
-		controlStrip.appendChild(openUrlBtn);
-		openUrlBtn.addEventListener('click', this.handlers.openUrl);
-
 		const openFileBtn = document.createElement('button');
-		openFileBtn.style.marginLeft = '3em';
 		openFileBtn.innerText = "Select model file";
 		controlStrip.appendChild(openFileBtn);
 		openFileBtn.addEventListener('click', this.handlers.openModelFile);
@@ -65,6 +52,25 @@ AFRAME.registerComponent('selectable-model', {
 		document.body.appendChild(fileInpt);
 		fileInpt.addEventListener("change", this.handlers.fileInptChange);
 		this.fileInpt = fileInpt;
+
+		const urlInput = document.createElement('input');
+		urlInput.setAttribute('id', 'urlInput');
+		urlInput.setAttribute('type', 'url');
+		urlInput.setAttribute('placeholder', "Paste a URL to a .GLB model");
+		urlInput.style.marginLeft = '3em';
+		urlInput.style.width = '30em';
+		controlStrip.appendChild(urlInput);
+		urlInput.addEventListener('change', this.handlers.openUrl);
+
+		const openUrlBtn = document.createElement('button');
+		openUrlBtn.style.marginLeft = '0.5em';
+		openUrlBtn.innerText = "Fetch model from URL";
+		controlStrip.appendChild(openUrlBtn);
+		openUrlBtn.addEventListener('click', this.handlers.openUrl);
+
+		document.addEventListener('paste', this.handlers.drop, { capture: true });
+		this.el.sceneEl.addEventListener('dragover', this.handlers.preventDefault);   // prevents default to allow drop
+		this.el.sceneEl.addEventListener('drop', this.handlers.drop);
 
 		const animateLabel = document.createElement('label');
 		animateLabel.innerText = "Animate";
@@ -128,28 +134,61 @@ AFRAME.registerComponent('selectable-model', {
 			let spinner = document.getElementById(SPINNER_ID);
 			spinner?.addState(STATE_SPINNING);
 
-			const file = this.fileInpt.files[0];
-			const dataIF = this.el.sceneEl.croquetSession?.data;
-			let modelUrl;
-			if (typeof dataIF?.store === 'function' && file.size > BASE64_CROQUET_MAX) {
-				const buffer = await file.arrayBuffer();
-				const handle = await dataIF.store(buffer, {});
-				const croquetId = dataIF.toId(handle);
-				modelUrl = `croquet:` + croquetId;
-			} else {
-				if (typeof dataIF?.store !== 'function') {
-					this.showPersistentMsg(`The Croquet API for syncing files has changed`);
-				}
-				modelUrl = await fileToDataUrl(file);
-				if (modelUrl.length > 16384) {
-					this.showPersistentMsg(`“${file.name}” is too big to sync to other users; upload it somewhere and paste the URL below`);
-				}
-			}
-			this.el.setAttribute('selectable-model', 'src', modelUrl);
-			this.modelNeedsScaling = true;
+			await this.syncModel(this.fileInpt.files[0]);
 		} catch (err) {
 			this.showPersistentMsg(err);
 		}
+	},
+
+	drop: async function (evt) {
+		try {
+			const files = evt.clipboardData?.files ?? evt.dataTransfer?.files;
+			console.debug(`selectable-model ${evt.type}:`, evt.target, files);
+
+			let i = 0;
+			do {
+				if (['model/gltf-binary', ''].includes(files[i]?.type)) {
+					evt.stopPropagation();
+					evt.preventDefault();
+					const spinner = document.getElementById(SPINNER_ID);
+					spinner?.addState(STATE_SPINNING);
+
+					await this.syncModel(files[i]);
+					return;
+				} else {
+					++i;
+				}
+			} while (i < files.length);
+			if ('drop' === evt.type || 'INPUT' !== evt.target.tagName) {
+				evt.stopPropagation();
+				evt.preventDefault();
+				this.showTransientMsg(`Only a .GLB file can be ${'paste' === evt.type ? "pasted" : "dropped"} here`);
+			}
+		} catch (err) {
+			console.error("while dropping file:", err);
+			this.showPersistentMsg(err);
+		}
+	},
+
+	syncModel: async function (file) {
+		const dataIF = this.el.sceneEl.croquetSession?.data;
+		let modelUrl;
+		if (typeof dataIF?.store === 'function' && file.size > BASE64_CROQUET_MAX) {
+			const buffer = await file.arrayBuffer();
+			const handle = await dataIF.store(buffer, {});
+			const croquetId = dataIF.toId(handle);
+			modelUrl = `croquet:` + croquetId;
+		} else {
+			if (typeof dataIF?.store !== 'function') {
+				this.showPersistentMsg(`The Croquet API for syncing files has changed`);
+			}
+			modelUrl = await fileToDataUrl(file);
+			if (modelUrl.length > 16384) {
+				this.showPersistentMsg(`“${file.name}” is too big to sync to other users; upload it somewhere and paste the URL below`);
+			}
+		}
+		this.el.setAttribute('selectable-model', 'src', modelUrl);
+		this.modelNeedsScaling = true;
 
 		function fileToDataUrl(file) {
 			return new Promise((resolve, reject) => {
@@ -229,6 +268,9 @@ AFRAME.registerComponent('selectable-model', {
 			`not a valid ${format?.toUpperCase?.()} file` :
 			`error while loading model: ` + JSON.stringify(evt.detail);
 		this.showPersistentMsg(msg);
+
+		const spinner = document.getElementById(SPINNER_ID);
+		spinner?.removeState(STATE_SPINNING);
 	},
 
 	animateChange: function (evt) {
