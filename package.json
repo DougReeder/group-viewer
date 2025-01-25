@@ -1,14 +1,14 @@
 {
-  "name": "group-viewer",
+  "name": "aframe-presenter-component",
   "version": "0.0.1",
-  "description": "view A-Frame scene with a group using Croquet",
+  "description": "present an A-Frame scene to a group using Croquet",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "presurge": "mkdir -p dist; cp -pr src src-dev node_modules group-data-viewer group-model-viewer assets dist/",
+    "presurge": "mkdir -p dist; cp -pr index.html src src-dev data-presenter model-presenter assets dist/",
     "surge": "surge dist https://group-viewer.surge.sh",
-    "prebeta": "mkdir -p dist; cp -pr src src-dev node_modules group-data-viewer group-model-viewer assets dist/",
-    "beta": "rsync -rt dist/* root@hominidsoftware.com:/var/www/beta/"
+    "beta": "rsync -rtm --delete index.html src src-dev data-presenter model-presenter assets root@hominidsoftware.com:/var/www/beta/",
+    "prod": "rsync -rtm --delete index.html src src-dev data-presenter model-presenter assets root@hominidsoftware.com:/var/www/modelpresenter/"
   },
   "keywords": [
     "ar",

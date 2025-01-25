@@ -252,8 +252,8 @@ AFRAME.registerComponent('selectable-model', {
 
 	modelLoaded: function () {
 		if (this.modelNeedsScaling) {
-			const groupViewerEl = document.querySelector('[group-viewer]')
-			groupViewerEl.emit('scalepresentation');
+			const presenterEl = document.querySelector('[presenter]')
+			presenterEl.emit('scalepresentation');
 		}
 		this.modelNeedsScaling = false;
 

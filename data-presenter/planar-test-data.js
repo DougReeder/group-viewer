@@ -1,4 +1,4 @@
-// planar-data.js —
+// planar-test-data.js —
 // Copyright © 2024 Doug Reeder; Licensed under the GNU GPL-3.0
 
 const X_POINTS = 41;

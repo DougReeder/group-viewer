@@ -1,5 +1,5 @@
-// group-viewer.js — A component and primitive to re-scale a presentation, provide cursors & markers
-// and share with a group using Croquet
+// aframe-presenter.js — A component and primitive to re-scale a presentation, provide cursors & markers
+// and present to a group using Croquet
 // Copyright © 2024–2025 by Doug Reeder under the MIT License
 
 /* global AFRAME, THREE */
@@ -13,7 +13,7 @@ const CONTROLLER_NAME_RIGHT = 'controllerRight';
 const CURSOR_PREFIX_LEFT = 'cursor-left-';
 const CURSOR_PREFIX_RIGHT = 'cursor-right-';
 
-AFRAME.registerComponent('group-viewer', {
+AFRAME.registerComponent('presenter', {
 	dependencies: [],
 
 	schema: {
@@ -117,7 +117,7 @@ AFRAME.registerComponent('group-viewer', {
 	},
 
 	userAdded: function (evt) {
-		console.log(`group-viewer userAdded`, evt.detail);
+		console.log(`presenter userAdded`, evt.detail);
 		if (evt.detail.viewId !== this.el.sceneEl.dataset.viewId) { return; }
 
 		const cameraEnt = document.querySelector('[camera]');
@@ -141,7 +141,7 @@ AFRAME.registerComponent('group-viewer', {
 				const rotation = {x: rInit.x, y: rInit.y - 180, z: rInit.z};
 				rigEnt.setAttribute('rotation', rotation);
 			} else {
-				console.error(`group-viewer userAdded can't set initial quaternion nor rotation of rig:`, qInit, rInit);
+				console.error(`presenter userAdded can't set initial quaternion nor rotation of rig:`, qInit, rInit);
 			}
 		}
 
@@ -189,7 +189,7 @@ Y button: reduce vertically`;
 	},
 
 	userExit: function (evt) {
-		console.log(`group-viewer userExit`, evt.detail);
+		console.log(`presenter userExit`, evt.detail);
 		// Hides cursors of *other* user.
 		for (const cursorPrefix of [CURSOR_PREFIX_LEFT, CURSOR_PREFIX_RIGHT]) {
 			const cursor = document.getElementById(cursorPrefix + evt.detail.viewId);
@@ -210,7 +210,7 @@ Y button: reduce vertically`;
 		offset.x *= SCALING_FACTOR;
 		offset.z *= SCALING_FACTOR;
 		if (data.log) {
-			console.log(`group-viewer horizontalLarger scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
+			console.log(`presenter horizontalLarger scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
 		}
 		offset.add(data.frameCenter);
 
@@ -233,7 +233,7 @@ Y button: reduce vertically`;
 		offset.x /= SCALING_FACTOR;
 		offset.z /= SCALING_FACTOR;
 		if (data.log) {
-			console.log(`group-viewer horizontalSmaller scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
+			console.log(`presenter horizontalSmaller scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
 		}
 		offset.add(data.frameCenter);
 
@@ -255,7 +255,7 @@ Y button: reduce vertically`;
 		offset.copy(presentationObj.position).sub(data.frameCenter)
 		offset.y *= SCALING_FACTOR;
 		if (data.log) {
-			console.log(`group-viewer verticalLarger scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
+			console.log(`presenter verticalLarger scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
 		}
 		offset.add(data.frameCenter);
 
@@ -277,7 +277,7 @@ Y button: reduce vertically`;
 		offset.copy(presentationObj.position).sub(data.frameCenter)
 		offset.y /= SCALING_FACTOR;
 		if (data.log) {
-			console.log(`group-viewer verticalSmaller scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
+			console.log(`presenter verticalSmaller scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
 		}
 		offset.add(data.frameCenter);
 
@@ -342,7 +342,7 @@ Y button: reduce vertically`;
 			if (intersection?.point?.isVector3) {
 				cursor.setAttribute('position', intersection.point);
 			} else {
-				console.debug(`group-viewer: beginCursor: intersection has no point:`, intersection);
+				console.debug(`presenter: beginCursor: intersection has no point:`, intersection);
 			}
 			if (intersection?.normal?.isVector3) {
 				this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.normal);
@@ -351,7 +351,7 @@ Y button: reduce vertically`;
 				this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.face.normal);
 				cursor.setAttribute('rotationquaternion', this.quaternion);
 			} else {
-				console.debug(`group-viewer: beginCursor: intersection has no normal:`, intersection);
+				console.debug(`presenter: beginCursor: intersection has no normal:`, intersection);
 			}
 		} else {
 			if (CURSOR_PREFIX_LEFT === cursorPrefix) {
@@ -384,7 +384,7 @@ Y button: reduce vertically`;
 						if (intersection?.point?.isVector3) {
 							cursor.setAttribute('position', intersection.point);
 						} else {
-							console.debug(`group-viewer: updateCursors: intersection has no point:`, intersection);
+							console.debug(`presenter: updateCursors: intersection has no point:`, intersection);
 						}
 						if (intersection?.normal?.isVector3) {
 							this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.normal);
@@ -393,7 +393,7 @@ Y button: reduce vertically`;
 							this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.face.normal);
 							cursor.setAttribute('rotationquaternion', this.quaternion);
 						} else {
-							console.debug(`group-viewer: updateCursors: intersection has no normal:`, intersection);
+							console.debug(`presenter: updateCursors: intersection has no normal:`, intersection);
 						}
 						console.debug(`updateCursors ${userColor} ${cursorPrefix}:`, intersection.point, intersection.normal, this.quaternion, cursor);
 					} else {
@@ -426,7 +426,7 @@ Y button: reduce vertically`;
 		}
 
 		if (this.data.log) {
-			console.log(`group-viewer update presentation:`, document.querySelectorAll('#' + this.data.presentationId));
+			console.log(`presenter update presentation:`, document.querySelectorAll('#' + this.data.presentationId));
 		}
 	},
 
@@ -435,7 +435,7 @@ Y button: reduce vertically`;
 		const presentation = document.getElementById(data.presentationId);
 		const presentationObj = presentation.object3D;
 		if (data.log) {
-			console.log("group-viewer scalePresentation", data, presentation, presentationObj);
+			console.log("presenter scalePresentation", data, presentation, presentationObj);
 		}
 		presentationObj.scale.x = presentationObj.scale.y = presentationObj.scale.z = 1;
 		presentationObj.position.x = presentationObj.position.y = presentationObj.position.z = 0;
@@ -445,7 +445,7 @@ Y button: reduce vertically`;
 		const bbSize = new THREE.Vector3();
 		boundingBox.getSize(bbSize);
 		let scale = Math.min(data.frameSize.x / bbSize.x, data.frameSize.y / bbSize.y, data.frameSize.z / bbSize.z);
-		console.log(`group-viewer scalePresentation boundingBox:`, scale, bbSize, JSON.stringify(boundingBox));
+		console.log(`presenter scalePresentation boundingBox:`, scale, bbSize, JSON.stringify(boundingBox));
 		if (Infinity === scale) {
 			scale = 1;
 		}
@@ -456,7 +456,7 @@ Y button: reduce vertically`;
 		offset.add(data.frameCenter);
 
 		if (data.log) {
-			console.log(`group-viewer scalePresentation scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
+			console.log(`presenter scalePresentation scale: ${JSON.stringify(scale)}  offset: ${JSON.stringify(offset)}`);
 		}
 
 		presentation.setAttribute('scale', {x: scale, y: scale, z: scale});
@@ -582,18 +582,18 @@ Y button: reduce vertically`;
 });
 
 
-AFRAME.registerPrimitive('a-group-viewer', {
+AFRAME.registerPrimitive('a-presenter', {
 	defaultComponents: {
-		'group-viewer': {}
+		'presenter': {}
 	},
 
 	mappings: {
-		fly: 'group-viewer.fly',
-		presentationId: 'group-viewer.presentationId',
-		frameSize: 'group-viewer.frameSize',
-		frameCenter: 'group-viewer.frameCenter',
-		tps: 'group-viewer.tps',
+		fly: 'presenter.fly',
+		presentationId: 'presenter.presentationId',
+		frameSize: 'presenter.frameSize',
+		frameCenter: 'presenter.frameCenter',
+		tps: 'presenter.tps',
 
-		log: 'group-viewer.log'
+		log: 'presenter.log'
 	}
 });
