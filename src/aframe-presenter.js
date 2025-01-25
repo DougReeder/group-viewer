@@ -40,6 +40,8 @@ AFRAME.registerComponent('presenter', {
 		this.handlers.beginCursorRight = this.beginCursor.bind(this, CURSOR_PREFIX_RIGHT);
 		this.handlers.endCursorLeft = this.endCursor.bind(this, CURSOR_PREFIX_LEFT);
 		this.handlers.endCursorRight = this.endCursor.bind(this, CURSOR_PREFIX_RIGHT);
+		this.handlers.enterXR = this.enterXR.bind(this);
+		this.handlers.sessionVisibilityChange = this.sessionVisibilityChange.bind(this);
 		this.handlers.scalePresentation = this.scalePresentation.bind(this);
 
 		const data = this.data;
@@ -52,6 +54,8 @@ AFRAME.registerComponent('presenter', {
 			camera = document.createElement('a-camera');
 			camera.setAttribute('wasd-controls-enabled', false);
 			camera.setAttribute('position', {x: 0, y: 1.6, z: 0});
+
+			el.sceneEl.addEventListener('enter-vr', this.handlers.enterXR);
 
 			const controlsConfiguration = {hand: 'left'};
 			const leftController = document.createElement('a-entity');
@@ -415,6 +419,34 @@ Y button: reduce vertically`;
 		cursor?.setAttribute('visible', false);
 	},
 
+	enterXR: function (evt) {
+		this.el.sceneEl.xrSession.addEventListener('visibilitychange', this.handlers.sessionVisibilityChange);
+	},
+
+	/** handles both left & right cursors */
+	sessionVisibilityChange: function (evt) {
+		console.debug(`presenter visibilitychange:`, evt.session.visibilityState, evt.session);
+		switch (evt.session.visibilityState) {
+			case "hidden":
+			case "visible-blurred":
+				this.endCursor(CURSOR_PREFIX_LEFT, evt);
+				this.endCursor(CURSOR_PREFIX_RIGHT, evt);
+				break;
+			case "visible":
+				const viewId = document.querySelector('a-scene')?.dataset?.viewId;
+				for (const [controllerName, cursorPrefix] of [[CONTROLLER_NAME_LEFT, CURSOR_PREFIX_LEFT], [CONTROLLER_NAME_RIGHT, CURSOR_PREFIX_RIGHT]]) {
+					const controller = document.getElementById(controllerName);
+					if (controller?.components?.raycaster?.intersectedEls?.length > 0) {
+						const cursor = document.getElementById(cursorPrefix + viewId);
+						cursor?.setAttribute('visible', true);
+					}
+				}
+				break;
+			default:
+				break;
+		}
+	},
+
 	/** Called when properties are changed, incl. right after init */
 	update: function (oldData) {
 		const oldPresentation = document.getElementById(oldData.presentationId);
@@ -516,6 +548,13 @@ Y button: reduce vertically`;
 
 	/** Called when a component is removed (e.g., via removeAttribute). */
 	remove: function () {
+		const leftController = document.getElementById(CONTROLLER_NAME_LEFT);
+		leftController?.parentElement.removeChild(leftController);
+		const rightController = document.getElementById(CONTROLLER_NAME_RIGHT);
+		rightController?.parentElement.removeChild(rightController);
+
+		this.el.sceneEl.removeEventListener('user-added', this.handlers.userAdded);
+		this.el.sceneEl.removeEventListener('user-exit', this.handlers.userExit);
 		this.el.removeEventListener('scalepresentation', this.handlers.scalePresentation);
 	},
 
