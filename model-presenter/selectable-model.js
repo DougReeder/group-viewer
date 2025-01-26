@@ -114,10 +114,15 @@ AFRAME.registerComponent('selectable-model', {
 	handlers: {},
 
 	openUrl: function (evt) {
-		const urlInpt = document.querySelector('input[type=url]');
-		console.log(`openUrl`, evt, `“${urlInpt?.value}”`);
-		this.el.setAttribute('selectable-model', 'src', urlInpt.value);
-		this.modelNeedsScaling = true;
+		const value = document.querySelector('input[type=url]')?.value?.trim();
+		console.debug(`openUrl`, evt, `“${value}”`);
+		const url = URL.parse(value);
+		if (['https:', 'http:', 'ftp:', 'ftps:', 'sftp:', 'file:', 'data:', 'news:'].includes(url?.protocol)) {
+			this.el.setAttribute('selectable-model', 'src', value);
+			this.modelNeedsScaling = true;
+		} else if (value?.length > 0) {
+			this.showTransientMsg(`“${value}” is not a URL`);
+		}
 	},
 
 	openModelFile: function (evt) {
