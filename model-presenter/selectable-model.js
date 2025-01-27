@@ -31,50 +31,21 @@ AFRAME.registerComponent('selectable-model', {
 		this.handlers.spinnerStateRemoved = this.spinnerStateRemoved.bind(this);
 
 		const controlStrip = document.createElement('div');
-		controlStrip.style.height = '40px';
-		controlStrip.style.width = '95%';
+		controlStrip.style.width = 'calc(100% - 1em - 65px)';
 		controlStrip.style.position = 'absolute';
 		controlStrip.style.left = '1em';
 		controlStrip.style.bottom = '1em';
 		controlStrip.style.display = 'flex';
+		controlStrip.style.flexWrap = 'wrap';
 		controlStrip.style.justifyContent = 'flex-start'
+		controlStrip.style.alignItems = 'stretch';
+		controlStrip.style.gap = '0.5em';
+		controlStrip.style.rowGap = '1em';
 		document.body.appendChild(controlStrip);
-
-		const openFileBtn = document.createElement('button');
-		openFileBtn.innerText = "Select model file";
-		controlStrip.appendChild(openFileBtn);
-		openFileBtn.addEventListener('click', this.handlers.openModelFile);
-
-		const fileInpt = document.createElement('input');
-		fileInpt.setAttribute('id', FILE_INPT_ID);
-		fileInpt.setAttribute('type', 'file');
-		fileInpt.setAttribute('accept', 'model/gltf-binary,.glb');
-		document.body.appendChild(fileInpt);
-		fileInpt.addEventListener("change", this.handlers.fileInptChange);
-		this.fileInpt = fileInpt;
-
-		const urlInput = document.createElement('input');
-		urlInput.setAttribute('id', 'urlInput');
-		urlInput.setAttribute('type', 'url');
-		urlInput.setAttribute('placeholder', "Paste a URL to a .GLB model");
-		urlInput.style.marginLeft = '3em';
-		urlInput.style.width = '30em';
-		controlStrip.appendChild(urlInput);
-		urlInput.addEventListener('change', this.handlers.openUrl);
-
-		const openUrlBtn = document.createElement('button');
-		openUrlBtn.style.marginLeft = '0.5em';
-		openUrlBtn.innerText = "Fetch model from URL";
-		controlStrip.appendChild(openUrlBtn);
-		openUrlBtn.addEventListener('click', this.handlers.openUrl);
-
-		document.addEventListener('paste', this.handlers.drop, { capture: true });
-		this.el.sceneEl.addEventListener('dragover', this.handlers.preventDefault);   // prevents default to allow drop
-		this.el.sceneEl.addEventListener('drop', this.handlers.drop);
 
 		const animateLabel = document.createElement('label');
 		animateLabel.innerText = "Animate";
-		animateLabel.style.marginLeft = '3em';
+		animateLabel.style.marginRight = '2em';
 		animateLabel.style.lineHeight = '40px';
 		animateLabel.style.paddingLeft = '0.5em';
 		animateLabel.style.paddingRight = '0.5em';
@@ -87,6 +58,46 @@ AFRAME.registerComponent('selectable-model', {
 		animateLabel.appendChild(animateChkbx);
 		animateChkbx.addEventListener('change', this.handlers.animateChange);
 		this.animateChkbx = animateChkbx;
+
+		const openFileBtn = document.createElement('button');
+		openFileBtn.style.minHeight = '40px';
+		openFileBtn.style.marginRight = '2em';
+		openFileBtn.innerText = "Select model file";
+		controlStrip.appendChild(openFileBtn);
+		openFileBtn.addEventListener('click', this.handlers.openModelFile);
+
+		const fileInpt = document.createElement('input');
+		fileInpt.setAttribute('id', FILE_INPT_ID);
+		fileInpt.setAttribute('type', 'file');
+		fileInpt.setAttribute('accept', 'model/gltf-binary,.glb');
+		document.body.appendChild(fileInpt);
+		fileInpt.addEventListener("change", this.handlers.fileInptChange);
+		this.fileInpt = fileInpt;
+
+		const urlControls = document.createElement('div');
+		urlControls.style.display = 'flex';
+		urlControls.style.gap = '0.5em';
+		controlStrip.appendChild(urlControls);
+
+		const urlInput = document.createElement('input');
+		urlInput.setAttribute('id', 'urlInput');
+		urlInput.setAttribute('type', 'url');
+		urlInput.setAttribute('placeholder', "Paste a URL to a .GLB model");
+		urlInput.style.height = '40px';
+		urlInput.style.width = '20em';
+		urlInput.style.paddingLeft = '1em';
+		urlControls.appendChild(urlInput);
+		urlInput.addEventListener('change', this.handlers.openUrl);
+
+		const openUrlBtn = document.createElement('button');
+		openFileBtn.style.minHeight = '40px';
+		openUrlBtn.innerText = "Fetch model from URL";
+		urlControls.appendChild(openUrlBtn);
+		openUrlBtn.addEventListener('click', this.handlers.openUrl);
+
+		document.addEventListener('paste', this.handlers.drop, { capture: true });
+		this.el.sceneEl.addEventListener('dragover', this.handlers.preventDefault);   // prevents default to allow drop
+		this.el.sceneEl.addEventListener('drop', this.handlers.drop);
 
 		this.el.addEventListener('model-loaded', this.handlers.modelLoaded);
 		this.el.addEventListener('model-error', this.handlers.modelError);
