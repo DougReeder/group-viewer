@@ -12,6 +12,13 @@ const CONTROLLER_NAME_LEFT = 'controllerLeft';
 const CONTROLLER_NAME_RIGHT = 'controllerRight';
 const CURSOR_PREFIX_LEFT = 'cursor-left-';
 const CURSOR_PREFIX_RIGHT = 'cursor-right-';
+const HELP_TEXT =
+`Organize meetings using your existing software.
+
+Click “Share session”, or “Copy session URL” then paste the URL into your meeting chat.
+While presenting, continue to use your meeting audio.
+
+Any user in VR can use controllers to point out features of the current model.`;
 
 AFRAME.registerComponent('presenter', {
 	dependencies: [],
@@ -31,6 +38,7 @@ AFRAME.registerComponent('presenter', {
 	init: function () {
 		this.handlers.shareSession = this.shareSession.bind(this);
 		this.handlers.copySessionUrl = this.copySessionUrl.bind(this);
+		this.handlers.showHelp = this.showPersistentMsg.bind(this, HELP_TEXT);
 		this.handlers.userAdded = this.userAdded.bind(this);
 		this.handlers.userExit = this.userExit.bind(this);
 		this.handlers.horizontalLarger = this.horizontalLarger.bind(this);
@@ -68,6 +76,15 @@ AFRAME.registerComponent('presenter', {
 		copyBtn.innerText = "Copy session URL";
 		controlStrip.appendChild(copyBtn);
 		copyBtn.addEventListener('click', this.handlers.copySessionUrl);
+
+		const helpBtn = document.createElement('button');
+		helpBtn.style.height = '40px';
+		helpBtn.style.position = 'absolute';
+		helpBtn.style.right = '1em';
+		helpBtn.style.top = '1em';
+		helpBtn.innerText = "Help";
+		document.body.appendChild(helpBtn);
+		helpBtn.addEventListener('click', this.handlers.showHelp);
 
 		const data = this.data;
 		const el = this.el;
@@ -618,6 +635,7 @@ Y button: reduce vertically`;
 				this.transientDialog.style.top = '1em';
 				this.transientDialog.style.right = '1em';
 				this.transientDialog.style.marginRight = '0';
+				this.transientDialog.style.left = '1em';
 				document.body.appendChild(this.transientDialog);
 				const div = document.createElement('div');
 				this.transientDialog.appendChild(div);
@@ -648,8 +666,9 @@ Y button: reduce vertically`;
 			if (!this.persistentDialog) {
 				this.persistentDialog = document.createElement('dialog');
 				this.persistentDialog.style.top = '1em';
+				this.persistentDialog.style.right = '1em';
+				this.persistentDialog.style.marginRight = '0';
 				this.persistentDialog.style.left = '1em';
-				this.persistentDialog.style.marginLeft = '0';
 				document.body.appendChild(this.persistentDialog);
 				const div = document.createElement('div');
 				this.persistentDialog.appendChild(div);

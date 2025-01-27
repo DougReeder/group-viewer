@@ -332,6 +332,7 @@ AFRAME.registerComponent('selectable-model', {
 				this.transientDialog.style.top = '1em';
 				this.transientDialog.style.right = '1em';
 				this.transientDialog.style.marginRight = '0';
+				this.transientDialog.style.left = '1em';
 				document.body.appendChild(this.transientDialog);
 				const div = document.createElement('div');
 				this.transientDialog.appendChild(div);
@@ -353,8 +354,9 @@ AFRAME.registerComponent('selectable-model', {
 			if (!this.persistentDialog) {
 				this.persistentDialog = document.createElement('dialog');
 				this.persistentDialog.style.top = '1em';
+				this.persistentDialog.style.right = '1em';
+				this.persistentDialog.style.marginRight = '0';
 				this.persistentDialog.style.left = '1em';
-				this.persistentDialog.style.marginLeft = '0';
 				document.body.appendChild(this.persistentDialog);
 				const div = document.createElement('div');
 				this.persistentDialog.appendChild(div);
