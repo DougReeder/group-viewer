@@ -29,6 +29,8 @@ AFRAME.registerComponent('presenter', {
 
 	/** Called once when component is attached. Generally for initial setup. */
 	init: function () {
+		this.handlers.shareSession = this.shareSession.bind(this);
+		this.handlers.copySessionUrl = this.copySessionUrl.bind(this);
 		this.handlers.userAdded = this.userAdded.bind(this);
 		this.handlers.userExit = this.userExit.bind(this);
 		this.handlers.horizontalLarger = this.horizontalLarger.bind(this);
@@ -43,6 +45,29 @@ AFRAME.registerComponent('presenter', {
 		this.handlers.enterXR = this.enterXR.bind(this);
 		this.handlers.sessionVisibilityChange = this.sessionVisibilityChange.bind(this);
 		this.handlers.scalePresentation = this.scalePresentation.bind(this);
+
+		const controlStrip = document.createElement('div');
+		controlStrip.style.height = '40px';
+		controlStrip.style.width = '95%';
+		controlStrip.style.position = 'absolute';
+		controlStrip.style.left = '1em';
+		controlStrip.style.top = '1em';
+		controlStrip.style.display = 'flex';
+		controlStrip.style.justifyContent = 'flex-start'
+		document.body.appendChild(controlStrip);
+
+		if ('function' === typeof navigator.share) {
+			const shareBtn = document.createElement('button');
+			shareBtn.innerText = "Share session";
+			controlStrip.appendChild(shareBtn);
+			shareBtn.addEventListener('click', this.handlers.shareSession);
+		}
+
+		const copyBtn = document.createElement('button');
+		copyBtn.style.marginLeft = '0.5em';
+		copyBtn.innerText = "Copy session URL";
+		controlStrip.appendChild(copyBtn);
+		copyBtn.addEventListener('click', this.handlers.copySessionUrl);
 
 		const data = this.data;
 		const el = this.el;
@@ -118,6 +143,30 @@ AFRAME.registerComponent('presenter', {
 	},
 
 	handlers: {
+	},
+
+	shareSession: async function (_evt) {
+		try {
+			const data = {
+				title: "Model Presentation",
+				text: "Follow this URL to join",
+				url: window.location.href
+			};
+			await navigator.share(data);
+		} catch (err) {
+			if ("AbortError" !== err.name) {
+				this.showTransientMsg(`Sharing failed: ` + (err.message || err.name || err?.toString()));
+			}
+		}
+	},
+
+	copySessionUrl: async function (_evt) {
+		try {
+			await navigator.clipboard.writeText(window.location.href);
+			this.showTransientMsg(`Paste the URL into your meeting chat`);
+		} catch (err) {
+			this.showTransientMsg(`Copy failed: ` + (err.message || err.name || err?.toString()));
+		}
 	},
 
 	userAdded: function (evt) {
@@ -567,8 +616,8 @@ Y button: reduce vertically`;
 			if (!this.transientDialog) {
 				this.transientDialog = document.createElement('dialog');
 				this.transientDialog.style.top = '1em';
-				this.transientDialog.style.left = '1em';
-				this.transientDialog.style.marginLeft = '0';
+				this.transientDialog.style.right = '1em';
+				this.transientDialog.style.marginRight = '0';
 				document.body.appendChild(this.transientDialog);
 				const div = document.createElement('div');
 				this.transientDialog.appendChild(div);
@@ -599,8 +648,8 @@ Y button: reduce vertically`;
 			if (!this.persistentDialog) {
 				this.persistentDialog = document.createElement('dialog');
 				this.persistentDialog.style.top = '1em';
-				this.persistentDialog.style.right = '1em';
-				this.persistentDialog.style.marginRight = '0';
+				this.persistentDialog.style.left = '1em';
+				this.persistentDialog.style.marginLeft = '0';
 				document.body.appendChild(this.persistentDialog);
 				const div = document.createElement('div');
 				this.persistentDialog.appendChild(div);
