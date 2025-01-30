@@ -105,7 +105,11 @@ AFRAME.registerComponent('presenter', {
 			const leftController = document.createElement('a-entity');
 			leftController.setAttribute('id', CONTROLLER_NAME_LEFT);
 			leftController.setAttribute('laser-controls', controlsConfiguration);
-			leftController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
+			leftController.setAttribute('raycaster', {
+				objects: '.' + PRESENTATION_CLASS,
+				lineOpacity: 0.667,
+				far: 10
+			});
 			leftController.addEventListener('raycaster-intersection', this.handlers.beginCursorLeft);
 			leftController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorLeft);
 			const leftHand = document.createElement('a-entity');
@@ -119,7 +123,11 @@ AFRAME.registerComponent('presenter', {
 			const rightController = document.createElement('a-entity');
 			rightController.setAttribute('id', CONTROLLER_NAME_RIGHT);
 			rightController.setAttribute('laser-controls', controlsConfiguration);
-			rightController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
+			rightController.setAttribute('raycaster', {
+				objects: '.' + PRESENTATION_CLASS,
+				lineOpacity: 0.667,
+				far: 10
+			});
 			rightController.addEventListener('raycaster-intersection', this.handlers.beginCursorRight);
 			rightController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorRight);
 			const rightHand = document.createElement('a-entity');
@@ -497,8 +505,10 @@ In hand-tracking mode, pinch to display pointer.`;
 
 	/** laser-controls */
 	updateCursors: function (time) {
-		if (time - this.lastCroquetUpdate < 1000/this.data.tps) { return; }
-		this.lastCroquetUpdate = time;
+		const isSyncTime = time - this.lastCroquetUpdate > 1000/this.data.tps;
+		if (isSyncTime) {
+			this.lastCroquetUpdate = time;
+		}
 
 		for (const [controllerName, cursorPrefix] of [[CONTROLLER_NAME_LEFT, CURSOR_PREFIX_LEFT], [CONTROLLER_NAME_RIGHT, CURSOR_PREFIX_RIGHT]]) {
 			const controller = document.getElementById(controllerName);
@@ -514,16 +524,28 @@ In hand-tracking mode, pinch to display pointer.`;
 
 					if (cursor) {
 						if (intersection?.point?.isVector3) {
-							cursor.setAttribute('position', intersection.point);
+							if (isSyncTime) {
+								cursor?.setAttribute?.('position', intersection.point);
+							} else {
+								cursor?.setAttributeAFrame?.('position', intersection.point);
+							}
 						} else {
 							console.debug(`presenter: updateCursors: intersection has no point:`, intersection);
 						}
 						if (intersection?.normal?.isVector3) {
 							this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.normal);
-							cursor.setAttribute('rotationquaternion', this.quaternion);
+							if (isSyncTime) {
+								cursor?.setAttribute?.('rotationquaternion', this.quaternion);
+							} else {
+								cursor?.setAttributeAFrame?.('rotationquaternion', this.quaternion);
+							}
 						} else if (intersection?.face?.normal?.isVector3) {
 							this.quaternion.setFromUnitVectors(cursor.object3D.up, intersection.face.normal);
-							cursor.setAttribute('rotationquaternion', this.quaternion);
+							if (isSyncTime) {
+								cursor?.setAttribute?.('rotationquaternion', this.quaternion);
+							} else {
+								cursor?.setAttributeAFrame?.('rotationquaternion', this.quaternion);
+							}
 						} else {
 							console.debug(`presenter: updateCursors: intersection has no normal:`, intersection);
 						}
