@@ -18,7 +18,7 @@ const HELP_TEXT =
 Click “Share session”, or “Copy session URL” then paste the URL into your meeting chat.
 While presenting, continue to use your meeting audio.
 
-Any user in VR can use controllers to point out features of the current model.`;
+Any user in VR can display pointers using controllers or hand-tracking.`;
 
 AFRAME.registerComponent('presenter', {
 	dependencies: [],
@@ -48,6 +48,8 @@ AFRAME.registerComponent('presenter', {
 		this.handlers.keyDown = this.keyDown.bind(this);
 		this.handlers.beginCursorLeft = this.beginCursor.bind(this, CURSOR_PREFIX_LEFT);
 		this.handlers.beginCursorRight = this.beginCursor.bind(this, CURSOR_PREFIX_RIGHT);
+		this.handlers.updateCursorHandLeft = this.updateCursorHand.bind(this, CURSOR_PREFIX_LEFT);
+		this.handlers.updateCursorHandRight = this.updateCursorHand.bind(this, CURSOR_PREFIX_RIGHT);
 		this.handlers.endCursorLeft = this.endCursor.bind(this, CURSOR_PREFIX_LEFT);
 		this.handlers.endCursorRight = this.endCursor.bind(this, CURSOR_PREFIX_RIGHT);
 		this.handlers.enterXR = this.enterXR.bind(this);
@@ -106,6 +108,11 @@ AFRAME.registerComponent('presenter', {
 			leftController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
 			leftController.addEventListener('raycaster-intersection', this.handlers.beginCursorLeft);
 			leftController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorLeft);
+			const leftHand = document.createElement('a-entity');
+			leftHand.setAttribute('hand-tracking-controls', 'hand: left; modelColor: gray');
+			leftHand.addEventListener('pinchstarted',  this.handlers.updateCursorHandLeft);
+			leftHand.addEventListener('pinchmoved', this.handlers.updateCursorHandLeft);
+			leftHand.addEventListener('pinchended', this.handlers.endCursorLeft);
 			el.sceneEl.addEventListener('exit-vr', this.handlers.endCursorLeft);
 
 			controlsConfiguration.hand = 'right';
@@ -115,16 +122,23 @@ AFRAME.registerComponent('presenter', {
 			rightController.setAttribute('raycaster', {objects: '.' + PRESENTATION_CLASS});
 			rightController.addEventListener('raycaster-intersection', this.handlers.beginCursorRight);
 			rightController.addEventListener('raycaster-intersection-cleared', this.handlers.endCursorRight);
+			const rightHand = document.createElement('a-entity');
+			rightHand.setAttribute('hand-tracking-controls', 'hand: right; modelColor: gray');
+			rightHand.addEventListener('pinchstarted',  this.handlers.updateCursorHandRight);
+			rightHand.addEventListener('pinchmoved', this.handlers.updateCursorHandRight);
+			rightHand.addEventListener('pinchended', this.handlers.endCursorRight);
 			el.sceneEl.addEventListener('exit-vr', this.handlers.endCursorRight);
 
-			const rig = document.createElement('a-entity');
-			rig.setAttribute('id', 'rig');
-			rig.setAttribute('movement-controls', {fly: data.fly, speed: 0.1})
-			rig.setAttribute('position', {x: 0, y: 0, z: data.frameSize.z / 2 + data.frameCenter.z + 2});
-			rig.appendChild(camera);
-			rig.appendChild(leftController);
-			rig.appendChild(rightController);
-			el.sceneEl.appendChild(rig);
+			this.rig = document.createElement('a-entity');
+			this.rig.setAttribute('id', 'rig');
+			this.rig.setAttribute('movement-controls', {fly: data.fly, speed: 0.1})
+			this.rig.setAttribute('position', {x: 0, y: 0, z: data.frameSize.z / 2 + data.frameCenter.z + 2});
+			this.rig.appendChild(camera);
+			this.rig.appendChild(leftController);
+			this.rig.appendChild(leftHand);
+			this.rig.appendChild(rightController);
+			this.rig.appendChild(rightHand);
+			el.sceneEl.appendChild(this.rig);
 		} else {
 			camera = document.createElement('a-camera');
 			camera.setAttribute('look-controls-enabled', false);
@@ -252,7 +266,9 @@ right joystick: rotate
 A button: enlarge horizontally
 B button: reduce horizontally
 X button: enlarge vertically
-Y button: reduce vertically`;
+Y button: reduce vertically
+
+In hand-tracking mode, pinch to display pointer.`;
 		}
 
 		this.showTransientMsg(`Your color is ${evt.detail.color}.` + controlHelp, evt.detail.color);
@@ -381,33 +397,11 @@ Y button: reduce vertically`;
 
 	quaternion: new THREE.Quaternion(),
 
+	/** laser-controls */
 	beginCursor: function (cursorPrefix, evt) {
 		const detail = evt.detail;
 		if (detail.intersections?.length >= 1) {
-			const viewId = document.querySelector('a-scene')?.dataset?.viewId;
-			if (!viewId) { return; }
-			const userColor = document.querySelector('a-scene')?.dataset?.userColor || FALLBACK_COLOR;
-			let cursor = document.getElementById(cursorPrefix + viewId);
-			if (!cursor) {
-				if (document.getElementById(this.data.pointerModelId)) {
-					cursor = document.createElement('a-gltf-model');
-					cursor.setAttribute('src', '#' + this.data.pointerModelId);
-					cursor.setAttribute('object-tint', userColor);
-				} else {   // falls back to cones on both sides of each face
-					cursor = document.createElement('a-cone');
-					cursor.setAttribute('radius-top', 0.01);
-					cursor.setAttribute('radius-bottom', -0.01);
-					cursor.setAttribute('height', 0.60);
-					cursor.setAttribute('color', userColor);
-				}
-				cursor.setAttribute('id', cursorPrefix + viewId);
-				cursor.setAttribute('multiuser', 'anim:false');
-				this.el.sceneEl.appendChild(cursor);
-				console.log(`beginCursor ${evt.type} added ${userColor} ${cursorPrefix}`, cursor);
-			} else {
-				console.log(`beginCursor ${evt.type} using existing ${userColor} ${cursorPrefix}`, cursor);
-			}
-			cursor.setAttribute('visible', true);
+			const cursor = this.showCursor(cursorPrefix, evt);
 			const intersection = detail.intersections[0];
 			if (intersection?.point?.isVector3) {
 				cursor.setAttribute('position', intersection.point);
@@ -432,8 +426,76 @@ Y button: reduce vertically`;
 		}
 	},
 
+	vector3: new THREE.Vector3(),
+
+	lastCroquetHandUpdate: 0,
+
+	/** hand-tracking-controls */
+	updateCursorHand: function(cursorPrefix, evt) {
+		const isSyncTime = Date.now() - this.lastCroquetHandUpdate > 1000/this.data.tps
+		if (isSyncTime) {
+			this.lastCroquetHandUpdate = Date.now();
+		}
+
+		let cursor;
+		if ('pinchstarted' === evt.type) {
+			cursor = this.showCursor(cursorPrefix, evt);
+			console.log(`presenter ${evt.type}:`, cursorPrefix, evt.detail.position, evt.detail.wristRotation);
+		} else {
+			const viewId = document.querySelector('a-scene')?.dataset?.viewId;
+			cursor = document.getElementById(cursorPrefix + viewId);
+			console.debug(`presenter ${evt.type}:`, cursorPrefix, evt.detail.position, evt.detail.wristRotation);
+		}
+		if (evt.detail.position) {
+			evt.detail.position.applyMatrix4(this.rig.object3D.matrixWorld)
+			if (isSyncTime) {
+				cursor?.setAttribute?.('position', evt.detail.position);
+			} else {
+				cursor?.setAttributeAFrame?.('position', evt.detail.position);
+			}
+		}
+		if (evt.detail.wristRotation?.isQuaternion) {
+			this.quaternion.setFromRotationMatrix(this.rig.object3D.matrixWorld);
+			evt.detail.wristRotation.multiply(Q.FLIP_Z).multiply(this.quaternion);
+			if (isSyncTime) {
+				cursor?.setAttribute?.('rotationquaternion', evt.detail.wristRotation);
+			} else {
+				cursor?.setAttributeAFrame?.('rotationquaternion', evt.detail.wristRotation);
+			}
+		}
+	},
+
+	showCursor: function(cursorPrefix, evt) {
+		const viewId = document.querySelector('a-scene')?.dataset?.viewId;
+		if (!viewId) { return; }
+		const userColor = document.querySelector('a-scene')?.dataset?.userColor || FALLBACK_COLOR;
+		let cursor = document.getElementById(cursorPrefix + viewId);
+		if (!cursor) {
+			if (document.getElementById(this.data.pointerModelId)) {
+				cursor = document.createElement('a-gltf-model');
+				cursor.setAttribute('src', '#' + this.data.pointerModelId);
+				cursor.setAttribute('object-tint', userColor);
+			} else {   // falls back to cones on both sides of each face
+				cursor = document.createElement('a-cone');
+				cursor.setAttribute('radius-top', 0.01);
+				cursor.setAttribute('radius-bottom', -0.01);
+				cursor.setAttribute('height', 0.60);
+				cursor.setAttribute('color', userColor);
+			}
+			cursor.setAttribute('id', cursorPrefix + viewId);
+			cursor.setAttribute('multiuser', 'anim:false');
+			this.el.sceneEl.appendChild(cursor);
+			console.log(`showCursor ${evt.type} added ${userColor} ${cursorPrefix}`, cursor);
+		} else {
+			console.log(`showCursor ${evt.type} using existing ${userColor} ${cursorPrefix}`, cursor);
+		}
+		cursor.setAttribute('visible', true);
+		return cursor;
+	},
+
 	lastCroquetUpdate: 0,
 
+	/** laser-controls */
 	updateCursors: function (time) {
 		if (time - this.lastCroquetUpdate < 1000/this.data.tps) { return; }
 		this.lastCroquetUpdate = time;
@@ -476,6 +538,7 @@ Y button: reduce vertically`;
 		}
 	},
 
+	/** both laser-controls and hand-tracking-controls */
 	endCursor: function (cursorPrefix, evt) {
 		const viewId = document.querySelector('a-scene')?.dataset?.viewId;
 		if (!viewId) { return; }
