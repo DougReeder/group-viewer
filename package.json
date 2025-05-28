@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "presurge": "mkdir -p dist; cp -pr index.html src src-dev data-presenter model-presenter assets dist/",
+    "assemble": "mkdir -p dist; cp -pr index.html src src-dev data-presenter model-presenter assets dist/",
     "surge": "surge dist https://group-viewer.surge.sh",
     "beta": "rsync -rtm --delete index.html src src-dev data-presenter model-presenter assets root@hominidsoftware.com:/var/www/beta/",
     "prod": "rsync -rtm --delete index.html src src-dev data-presenter model-presenter assets root@hominidsoftware.com:/var/www/modelpresenter/"

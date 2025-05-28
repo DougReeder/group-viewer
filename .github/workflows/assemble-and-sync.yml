@@ -1,0 +1,33 @@
+name: assemble-and-sync
+on: [push, pull_request]
+jobs:
+  build:
+    name: assemble & sync - node.js
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        # Support LTS versions based on https://nodejs.org/en/about/releases/
+        node-version: ['22']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: workaround for extra source files
+        run: mkdir src-dev
+      - name: assemble in dist
+        run: npm run assemble
+      - name: sync archive to S3
+        uses: jakejarvis/s3-sync-action@master
+        if: ${{ github.ref == 'refs/heads/main' && github.repository == 'DougReeder/group-viewer' }}
+        with:
+          args: --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_ENDPOINT: ${{ vars.AWS_S3_ENDPOINT }}
+          SOURCE_DIR: 'dist'      # optional: defaults to entire repository
+          DEST_DIR: 'modelpresenter'
