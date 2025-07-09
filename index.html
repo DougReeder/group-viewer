@@ -2,9 +2,9 @@
 <head>
     <meta charset="utf-8">
     <title>Model Presenter</title>
-    <meta name="description" content="present a 3-D model to a group using Croquet">
+    <meta name="description" content="present a 3-D model (in GLB format) to a group using the Multisynq network">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <script src="https://unpkg.com/@croquet/croquet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@croquet/croquet@2.0.4/pub/croquet.min.js"></script>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.2/dist/aframe-extras.loaders.min.js"></script>
 <!--    <script src="src-dev/aframe-croquet-component.js"></script></head>-->
@@ -15,7 +15,7 @@
     <script src="src/aframe-presenter.js"></script>
 <body>
 
-<a-scene debug croquet="tps: 60; spawnPoint: 0 0 0;" inspector="url: https://cdn.jsdelivr.net/gh/c-frame/aframe-editor@1.7.5/dist/aframe-editor.min.js">
+<a-scene debug croquet="tps: 60; spawnPoint: 0 0 0; apiKey: your_key" inspector="url: https://cdn.jsdelivr.net/gh/c-frame/aframe-editor@1.7.x/dist/aframe-editor.min.js">
     <a-assets timeout="10000">
         <a-asset-item id="avatarModel" src="../assets/low_poly_head_with_hair_free_download.glb"></a-asset-item>
         <a-asset-item id="pointerModel" src="../assets/pointer_cone.glb"></a-asset-item>

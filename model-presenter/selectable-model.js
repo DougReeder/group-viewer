@@ -193,10 +193,10 @@ AFRAME.registerComponent('selectable-model', {
 			const buffer = await file.arrayBuffer();
 			const handle = await dataIF.store(buffer, {});
 			const croquetId = dataIF.toId(handle);
-			modelUrl = `croquet:` + croquetId;
+			modelUrl = `multisynq:` + croquetId;
 		} else {
 			if (typeof dataIF?.store !== 'function') {
-				this.showPersistentMsg(`The Croquet API for syncing files has changed`);
+				this.showPersistentMsg(`The Multisynq API for syncing files has changed`);
 			}
 			modelUrl = await fileToDataUrl(file);
 			if (modelUrl.length > 16384) {
@@ -246,9 +246,9 @@ AFRAME.registerComponent('selectable-model', {
 
 			let modelUrl = this.data.src;
 
-			if (modelUrl.startsWith('croquet:')) {
+			if (modelUrl.startsWith('multisynq:')) {
 				const dataIF = this.el.sceneEl.croquetSession?.data;
-				const handle = dataIF.fromId(modelUrl.slice('croquet:'.length));
+				const handle = dataIF.fromId(modelUrl.slice('multisynq:'.length));
 				const byteArray = await dataIF.fetch(handle);
 				const blob = new Blob([byteArray], {type: 'model/gltf-binary'});
 				this.objectUrl = URL.createObjectURL(blob);

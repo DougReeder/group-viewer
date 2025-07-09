@@ -1,14 +1,16 @@
 {
   "name": "aframe-presenter-component",
   "version": "0.0.1",
-  "description": "present an A-Frame scene to a group using Croquet",
+  "description": "present an A-Frame scene to a group using the Multisync network",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "assemble": "mkdir -p dist; cp -pr index.html src src-dev data-presenter model-presenter assets dist/",
+    "assemble": "mkdir -p dist; cp -pr index.html src data-presenter model-presenter assets dist/",
+    "presurge": "npm run assemble",
     "surge": "surge dist https://group-viewer.surge.sh",
-    "beta": "rsync -rtm --delete index.html src src-dev data-presenter model-presenter assets root@hominidsoftware.com:/var/www/beta/",
-    "prod": "rsync -rtm --delete index.html src src-dev data-presenter model-presenter assets root@hominidsoftware.com:/var/www/modelpresenter/"
+    "old": "rsync -rtm --delete index.html src data-presenter model-presenter assets root@mail.hominidsoftware.com:/var/www/beta/",
+    "preprod": "npm run assemble",
+    "prod": "aws s3 sync dist/ s3://web-static.hominidsoftware.com/modelpresenter/"
   },
   "keywords": [
     "ar",

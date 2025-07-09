@@ -1,5 +1,5 @@
 // aframe-presenter.js — A component and primitive to re-scale a presentation, provide cursors & markers
-// and present to a group using Croquet
+// and present to a group using the Multisynq network
 // Copyright © 2024–2025 by Doug Reeder under the MIT License
 
 /* global AFRAME, THREE */
@@ -29,7 +29,7 @@ AFRAME.registerComponent('presenter', {
 		pointerModelId: {default: 'pointerModel'},
 		frameSize: {type: 'vec3', default: {x: 2, y: 2, z: 2}},
 		frameCenter: {type: 'vec3', default: {x: 0, y: 1, z: 0}},
-		tps: {type: 'number', default: 20},   // Croquet OS ticks per second
+		tps: {type: 'number', default: 20},   // Multisynq network ticks per second
 
 		log: {default: false},
 	},
