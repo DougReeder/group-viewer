@@ -1,5 +1,6 @@
 name: assemble-and-sync
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
+permissions: {}
 jobs:
   build:
     name: assemble & sync - node.js
@@ -10,9 +11,11 @@ jobs:
         # Support LTS versions based on https://nodejs.org/en/about/releases/
         node-version: ['22']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
       - name: workaround for extra source files
@@ -20,7 +23,7 @@ jobs:
       - name: assemble in dist
         run: npm run assemble
       - name: sync archive to S3
-        uses: jakejarvis/s3-sync-action@master
+        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
         if: ${{ github.ref == 'refs/heads/main' && github.repository == 'DougReeder/group-viewer' }}
         with:
           args: --follow-symlinks --delete
